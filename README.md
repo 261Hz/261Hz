@@ -14,7 +14,11 @@ Here are some ideas to get you started:
 - 😄 Pronouns: ...
 - ⚡ Fun fact: ...
 -->
+<!-- Terminal About me -->
 <a href="https://261hz.github.io/261Hz/game.html">
    <img src="terminal.svg" alt="terminal" />
 </a>
+
+<!-- profile visits to see how lonely i am -->
+![visitors](https://hits.seeyoufarm.com/api/count/incr/badge.svg?url=https://github.com/261Hz&count_bg=%23005520&title_bg=%23050a05&icon=&icon_color=%2300cc44&title=visitors&edge_flat=true)
 
