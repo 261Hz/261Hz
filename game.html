@@ -192,11 +192,17 @@ function setVolume(t, d) {
 }
 function fadeInAudio(depth) {
   if (!audioCtx) return;
-  const vols = {4:0.006, 5:0.015, 6:0.025};
-  if (vols[depth]) setVolume(vols[depth], 2.5);
+  // volume tracks depth bidirectionally — louder deeper, quieter shallower
+  const vols = {0:0, 1:0, 2:0, 3:0.002, 4:0.006, 5:0.015, 6:0.025};
+  const vol = vols[depth] !== undefined ? vols[depth] : 0;
+  setVolume(vol, 1.8); // faster response than before so movement feels connected
+  // oscillator convergence still only kicks in at depth 4+
   if (osc2 && depth >= 4) {
     const det = {4:0.3, 5:0.15, 6:0.05}[depth] || 0.4;
     osc2.frequency.setTargetAtTime(261.63 + det, audioCtx.currentTime, 3.0);
+  } else if (osc2 && depth < 4) {
+    // reset detune when moving back up
+    osc2.frequency.setTargetAtTime(262.03, audioCtx.currentTime, 2.0);
   }
 }
 function fadeOutAudio() {
@@ -647,10 +653,12 @@ function resolveMove(room, dir) {
     repeatCount = 0;
   }
 
-  // 4+ same direction: forced non-progress
+  // 4+ same direction: always forced back to previously visited room — no progress possible
   if (repeatCount >= 3) {
     repeatCount = 0;
-    return getSpamResponse(room);
+    const visited = [...roomsVisited].filter(id => id !== room.id && rooms[id] && rooms[id].depth <= room.depth);
+    if (visited.length > 0) return visited[Math.floor(Math.random() * visited.length)];
+    return Object.values(room.exits)[0] || room.id; // last resort: any exit
   }
 
   // weighted distortion at depth 3+
