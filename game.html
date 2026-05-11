@@ -266,15 +266,14 @@ const rooms = {
   entrance: {
     id:'entrance', depth:0,
     descs:[
-      ["the passage is wide here. almost welcoming.",
-       "the walls are rough but the floor is smooth.",
-       "you came from somewhere. you don't remember where.",
-       "somewhere ahead: a sound. you should listen for it."],
-      ["the passage is wide here. less welcoming now.",
-       "the floor is smooth.",
-       "you came from somewhere."],
-      ["wide here.", "smooth.", "somewhere."],
-      ["here."]
+      ["wide corridor pretending it knows where it begins.",
+       "the floor behaves better than memory.",
+       "something ahead holds a tone you didn't agree to hear.",
+       "try: listen"],
+      ["wide corridor. pretending.",
+       "floor too orderly."],
+      ["wide. pretending."],
+      ["wide."]
     ],
     flavor:"exits: north, east",
     exits:{ n:'hall_a', e:'alcove_1' }
@@ -297,13 +296,13 @@ const rooms = {
   hall_a: {
     id:'hall_a', depth:1,
     descs:[
-      ["a long corridor. the kind you walk faster in.",
-       "the ceiling is lower than you expected.",
-       "there is a turn somewhere ahead."],
-      ["the corridor is narrower than before.",
-       "you don't remember the ceiling being this low."],
-      ["corridor.", "the turn."],
-      ["corridor."]
+      ["corridor tightens like it has opinions about you.",
+       "ceiling lowers without permission.",
+       "you adapt faster than you should."],
+      ["corridor tightens.",
+       "ceiling disagrees."],
+      ["tight. lowering."],
+      ["tight."]
     ],
     flavor:"exits: north, south, east",
     exits:{ n:'junction_1', s:'entrance', e:'dead_1' }
@@ -325,12 +324,13 @@ const rooms = {
   junction_1: {
     id:'junction_1', depth:1,
     descs:[
-      ["three ways. you pause.",
-       "from one direction, a faint hum.",
-       "it wants something from you.",
+      ["three options, all equally unconvincing.",
+       "one of them hums like it remembers you wrong.",
+       "you pause like that changes anything.",
        "try: listen"],
-      ["three ways.", "the hum. still waiting."],
-      ["three ways. the hum."]
+      ["options without conviction.",
+       "one hums wrong."],
+      ["options. hum."]
     ],
     flavor:"exits: north, south, west",
     exits:{ n:'passage_wide', s:'hall_a', w:'loop_a' }
@@ -339,12 +339,13 @@ const rooms = {
   loop_a: {
     id:'loop_a', depth:1,
     descs:[
-      ["you turn left. then left again. then left.",
-       "you are back where you started.",
-       "or somewhere that looks exactly like it."],
-      ["the room is familiar.", "you've stood here before."],
-      ["you are almost certain you've stood here before."],
-      ["there should be another exit here."]
+      ["you arrive slightly before you decide to.",
+       "the place looks embarrassed to repeat itself.",
+       "you let it."],
+      ["arrival before intent.",
+       "place repeats badly."],
+      ["repeat. before."],
+      ["repeat."]
     ],
     flavor:"exits: east, north",
     exits:{ e:'junction_1', n:'loop_b' }
@@ -353,11 +354,12 @@ const rooms = {
   loop_b: {
     id:'loop_b', depth:1,
     descs:[
-      ["the walls curve here. unusual.",
-       "the floor slopes down almost imperceptibly.",
-       "you feel like you've been going the wrong way for a long time."],
-      ["the curved walls. the slope.", "wrong way."],
-      ["wrong way."]
+      ["the geometry stops pretending to be straight.",
+       "you follow it anyway, like that's a plan.",
+       "something keeps agreeing with your mistake."],
+      ["geometry slips.",
+       "you continue anyway."],
+      ["slip. continue."]
     ],
     flavor:"exits: south, east",
     exits:{ s:'loop_a', e:'passage_wide' }
@@ -368,11 +370,12 @@ const rooms = {
   passage_wide: {
     id:'passage_wide', depth:2,
     descs:[
-      ["the passage opens up here. you can breathe.",
-       "something about this space feels like an exhale.",
-       "you think of a room you sat in once. music coming from another room."],
-      ["the wide passage. the exhale.", "the music from another room."],
-      ["the exhale."]
+      ["space opens like it's trying to forgive something.",
+       "breath returns, but not cleanly.",
+       "the tone gets closer without asking."],
+      ["space opens.",
+       "breath returns uneven."],
+      ["open. uneven."]
     ],
     flavor:"exits: north, south, west, east",
     exits:{ n:'narrow_1', s:'junction_1', w:'loop_b', e:'nowhere_a' }
@@ -381,11 +384,12 @@ const rooms = {
   narrow_1: {
     id:'narrow_1', depth:2,
     descs:[
-      ["narrow. your shoulders brush both walls.",
-       "you move sideways.",
-       "the sound is closer here. low. almost felt more than heard."],
-      ["narrow. sideways.", "the sound, closer."],
-      ["narrow.", "closer."]
+      ["walls revise your posture.",
+       "movement becomes something you negotiate with.",
+       "sound stops pretending it's distant."],
+      ["walls revise you.",
+       "movement negotiated."],
+      ["revise. near."]
     ],
     flavor:"exits: north, south, east",
     exits:{ n:'chamber_a', s:'passage_wide', e:'dead_2' }
@@ -394,12 +398,12 @@ const rooms = {
   dead_2: {
     id:'dead_2', depth:2,
     descs:[
-      ["you stop.",
-       "there is nothing ahead.",
-       "the silence here is specific. like it's waiting.",
+      ["you stop here like it was prewritten.",
+       "silence does not feel empty — just well-practiced.",
        "try: listen"],
-      ["you stop again.", "the silence again.", "still waiting."],
-      ["you stop.", "waiting."]
+      ["prewritten stop.",
+       "practiced silence."],
+      ["practice."]
     ],
     flavor:"exit: west",
     exits:{ w:'narrow_1' }, dead:true,
@@ -442,12 +446,13 @@ const rooms = {
   chamber_a: {
     id:'chamber_a', depth:3,
     descs:[
-      ["a small chamber. almost circular.",
-       "you sit down without meaning to.",
-       "the hum is clearer now. like a single held note.",
+      ["you enter something almost round, like hesitation made physical.",
+       "the tone sits down with you.",
+       "you forget you were moving.",
        "you could hum back."],
-      ["the chamber. almost circular.", "the hum, clearer."],
-      ["the hum."]
+      ["almost round.",
+       "tone sits."],
+      ["sit. tone."]
     ],
     flavor:"exits: north, east, south",
     exits:{ n:'passage_low', e:'side_room', s:'narrow_1' }
@@ -456,11 +461,12 @@ const rooms = {
   side_room: {
     id:'side_room', depth:3,
     descs:[
-      ["a room off the main path.",
-       "it feels like a parenthesis. a thought inside a thought.",
-       "you linger longer than you planned."],
-      ["the parenthesis.", "you linger."],
-      ["a thought inside a thought."]
+      ["a grammatical mistake in the structure.",
+       "you linger as if correcting it helps.",
+       "the sound returns slightly wrong, like it learned you."],
+      ["mistake room.",
+       "you linger anyway."],
+      ["mistake. linger."]
     ],
     flavor:"exits: west, north",
     exits:{ w:'chamber_a', n:'dead_3' }
@@ -470,11 +476,12 @@ const rooms = {
   dead_3: {
     id:'dead_3', depth:3,
     descs:[
-      ["a dead end.",
-       "but the air here is different. warmer.",
-       "you press your ear to the wall and hear something you can't name."],
-      ["the dead end. warmer.", "still can't name it."],
-      ["warmer."]
+      ["warm termination pretending it's still part of the system.",
+       "you press into it like meaning might respond.",
+       "it doesn't, but it doesn't refuse either."],
+      ["warm end.",
+       "no refusal."],
+      ["warm."]
     ],
     flavor:"exit: south",
     exits:{ s:'side_room' }, dead:true
@@ -483,11 +490,12 @@ const rooms = {
   passage_low: {
     id:'passage_low', depth:3,
     descs:[
-      ["you have to duck.",
-       "the walls press in. the ceiling presses down.",
-       "and yet you keep moving."],
-      ["ducking again.", "pressing in."],
-      ["pressing."]
+      ["space compresses like it remembers you incorrectly.",
+       "you proceed carefully, as if accuracy matters.",
+       "the tone stops being ahead of you."],
+      ["space compresses.",
+       "accuracy fails."],
+      ["compress. fail."]
     ],
     flavor:"exits: north, south",
     exits:{ n:'threshold', s:'chamber_a' }
@@ -497,11 +505,12 @@ const rooms = {
   threshold: {
     id:'threshold', depth:4,
     descs:[
-      ["you stop at a threshold.",
-       "the passage ahead is darker. different.",
-       "this is the kind of door you only go through once."],
-      ["the threshold.", "darker ahead."],
-      ["the threshold."]
+      ["the system stops describing itself here.",
+       "you notice too late that direction was a comfort habit.",
+       "the sound is no longer somewhere else."],
+      ["description ends.",
+       "direction drops out."],
+      ["end. drop."]
     ],
     impressions:{
       n:"something opens into darkness.",
@@ -513,12 +522,13 @@ const rooms = {
   deep_hall: {
     id:'deep_hall', depth:4,
     descs:[
-      ["deeper now. the walls are different here.",
-       "the lines are less straight. like someone drew them freehand.",
+      ["structure behaves like something you once understood.",
        "someone sat down and drew this.",
-       "you wonder if they knew someone would find it."],
-      ["the freehand walls.", "someone drew this.", "they knew."],
-      ["they knew."]
+       "you wonder if they knew someone would find it.",
+       "the tone sits behind perception now."],
+      ["structure loosens.",
+       "understanding fails."],
+      ["loosen. fail."]
     ],
     impressions:{
       n:"the narrower passage feels familiar.",
@@ -545,11 +555,12 @@ const rooms = {
   winding: {
     id:'winding', depth:4,
     descs:[
-      ["the path winds. no sharp turns.",
-       "it reminds you of something organic. a river. a melody.",
-       "you follow it."],
-      ["the winding path.", "a melody. you follow."],
-      ["you follow."]
+      ["you follow curvature like it's instruction.",
+       "nothing confirms you're right, but nothing interrupts you either.",
+       "the sound threads itself through your mistake."],
+      ["curvature as instruction.",
+       "no confirmation."],
+      ["curve. mistake."]
     ],
     impressions:{
       e:"something opens to your right.",
@@ -563,14 +574,13 @@ const rooms = {
   hollow: {
     id:'hollow', depth:5,
     descs:[
-      ["a hollow in the rock. large enough to stand in.",
-       "the sound here is unmistakable now.",
-       "a single frequency. low and clear. like a piano key held down forever.",
-       "the sound seems closer than the geometry allows.",
-       "somewhere above you: a cursor blinks in time with your breathing.",
+      ["space stops trying to be spatial.",
+       "the tone is now indistinguishable from attention.",
+       "you arrive without arrival.",
        "listen."],
-      ["the hollow.", "the frequency.", "closer than the geometry allows."],
-      ["closer."]
+      ["space fails.",
+       "tone equals attention."],
+      ["attention."]
     ],
     impressions:{
       n:"something pulls forward.",
@@ -582,9 +592,9 @@ const rooms = {
   false_center: {
     id:'false_center', depth:5,
     descs:[[
-      "the sound is overwhelming here.",
-      "the walls thin.",
-      "there is nowhere left to go.",
+      "you reach something that refuses to complete the idea of reaching.",
+      "the sound fills what used to be structure.",
+      "you try to listen properly, as if that's still a skill.",
       "",
       "type: listen"
     ]],
@@ -594,12 +604,13 @@ const rooms = {
   center: {
     id:'center', depth:6,
     descs:[[
-      "you are at the center.",
-      "", "there are no exits.",
-      "", "there is only a sound.",
-      "low. steady. the same note, held.",
-      "", "the floor is smooth here too.",
-      "", "type: listen"
+      "nothing left to translate.",
+      "the tone is complete without explaining itself.",
+      "you stop adding meaning out of embarrassment.",
+      "",
+      "the floor is smooth here too.",
+      "",
+      "type: listen"
     ]],
     exits:{}, isCenter:true
   }
@@ -773,9 +784,9 @@ function checkHumGeometry() {
 // ============================================================
 function getRoomDesc(room) {
   const count = visitCounts[room.id] || 0;
-  // spam compression: if player has been repeating, descriptions shorten faster
-  const speedMult = repeatCount >= 2 ? 2 : 1;
-  const idx = Math.min(Math.floor(count * speedMult), room.descs.length - 1);
+  // gradual erosion — no spike, just slow compression over many visits
+  // takes 3 visits to reach version 2, 6 to reach version 3, etc.
+  const idx = Math.min(Math.floor(count / 2), room.descs.length - 1);
   return room.descs[idx];
 }
 
@@ -1240,7 +1251,13 @@ document.getElementById('input').addEventListener('keydown', function(e) {
     handleCommand(val);
   }
 });
-document.addEventListener('click', () => document.getElementById('input').focus());
+document.addEventListener('click', () => {
+  document.getElementById('input').focus();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+});
+document.addEventListener('keydown', () => {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+});
 
 boot();
 </script>
