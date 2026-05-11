@@ -3,7 +3,7 @@
   role="img">
   <title>80s terminal — GitHub profile</title>
   <desc>An animated CRT terminal showing a typed introduction</desc>
-
+ 
   <defs>
     <style>
       .ln {
@@ -13,13 +13,13 @@
       }
       .ln-dim { fill: #005520; }
       .ln-brt { fill: #00ff88; }
-
+ 
       .scanline {
         fill: none;
         stroke: rgba(0,0,0,0.12);
         stroke-width: 1;
       }
-
+ 
       .t1  { animation: reveal 0s 0.2s both; }
       .t2  { animation: reveal 0s 0.7s both; }
       .t3  { animation: reveal 0s 1.3s both; }
@@ -31,27 +31,37 @@
       .t9  { animation: reveal 0s 5.9s both; }
       .t10 { animation: reveal 0s 6.7s both; }
       .t11 { animation: reveal 0s 7.5s both; }
-
+ 
       @keyframes reveal {
         from { opacity: 0; }
         to   { opacity: 1; }
       }
-
+ 
       .cursor {
         fill: #00ff55;
-        animation: blink 1s step-end infinite, reveal 0s 7.5s both;
+        opacity: 0;
+        animation: cursorshow 0s 7.5s forwards;
       }
+ 
+      @keyframes cursorshow {
+        from { opacity: 0; }
+        to   { opacity: 1; animation-name: blink; animation-duration: 1s; animation-iteration-count: infinite; animation-timing-function: step-end; }
+      }
+ 
+      .blink {
+        fill: #00ff55;
+        animation: blink 1s step-end infinite 7.5s;
+      }
+ 
       @keyframes blink {
         0%, 100% { opacity: 1; }
         50%       { opacity: 0; }
       }
     </style>
   </defs>
-
-  <!-- screen background -->
+ 
   <rect width="680" height="300" rx="4" fill="#050a05"/>
-
-  <!-- scanlines -->
+ 
   <line x1="0" y1="4"   x2="680" y2="4"   class="scanline"/>
   <line x1="0" y1="8"   x2="680" y2="8"   class="scanline"/>
   <line x1="0" y1="12"  x2="680" y2="12"  class="scanline"/>
@@ -126,7 +136,7 @@
   <line x1="0" y1="288" x2="680" y2="288" class="scanline"/>
   <line x1="0" y1="292" x2="680" y2="292" class="scanline"/>
   <line x1="0" y1="296" x2="680" y2="296" class="scanline"/>
-
+ 
   <!-- terminal lines -->
   <text x="24" y="46"  class="ln ln-dim t1">SYSTEM BOOT v2.1.0  --  READY</text>
   <text x="24" y="70"  class="ln ln-dim t2">------------------------------------</text>
@@ -139,7 +149,7 @@
   <text x="24" y="238" class="ln t9">&gt; cat status.txt</text>
   <text x="24" y="262" class="ln ln-brt t10">* * * * *</text>
   <text x="24" y="286" class="ln t11">&gt; </text>
-
-  <!-- blinking block cursor -->
-  <rect x="52" y="270" width="10" height="18" class="cursor"/>
+ 
+  <!-- cursor: hidden until 7.5s, then blinks forever -->
+  <rect x="52" y="270" width="10" height="18" class="blink" style="opacity:0; animation-delay: 7.5s;"/>
 </svg>
