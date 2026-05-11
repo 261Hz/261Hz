@@ -14,5 +14,7 @@ Here are some ideas to get you started:
 - 😄 Pronouns: ...
 - ⚡ Fun fact: ...
 -->
+<a href="https://261hz.github.io/261Hz/game.html">
+   <img src="terminal.svg" alt="terminal" />
+</a>
 
-<img src="terminal.svg" alt="terminal" />
