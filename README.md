@@ -15,4 +15,4 @@ Here are some ideas to get you started:
 - ⚡ Fun fact: ...
 -->
 
-<img src="https://261hz.github.io/261Hz/terminal.svg" alt="terminal" />
+<img src="terminal.svg" alt="terminal" />
