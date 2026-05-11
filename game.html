@@ -723,7 +723,7 @@ function checkUnlocks() {
 
   // hollow: requires more listening AND movement
   if (!hollowUnlocked) {
-    if (listenTotal >= 4 && moveCount >= 12) {
+    if (listenTotal >= 4 && moveCount >= 6) {
       hollowUnlocked = true;
       // deep_hall.n and winding.n already point to hollow
       // ensure false_center is still gated behind hollow
