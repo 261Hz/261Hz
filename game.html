@@ -161,9 +161,15 @@
   <div class="win-line win-unsettling" id="w6">the strange thing is:</div>
   <div class="win-line win-unsettling" id="w7">it was listening too.</div>
   <div class="win-restart win-line" id="w8" onclick="restartGame()">[ play again ]</div>
+  <div class="win-restart win-line" id="w9" onclick="goProfile()">[ surface ]</div>
 </div>
 
 <script>
+// ============================================================
+// PROFILE
+// ============================================================
+const PROFILE_URL = "https://github.com/261Hz";
+
 // ============================================================
 // AUDIO
 // ============================================================
@@ -1111,8 +1117,19 @@ function handleCommand(raw) {
 
     case cmd === 'back' || cmd === 'return':
       { printEmpty(); printWarn("you'll have to find your own way back."); break; }
-    case cmd === 'quit' || cmd === 'exit':
-      { printEmpty(); printDim("there is no exit."); printDim("only through."); break; }
+    case cmd === 'quit' || cmd === 'exit' || cmd === 'surface': {
+      printEmpty();
+      printDim("disconnecting.");
+      setTimeout(() => printDim("signal lost."), 900);
+      setTimeout(() => printDim("returning to surface."), 1800);
+      setTimeout(() => {
+        document.body.style.transition = "filter 2.5s ease, opacity 2.5s ease";
+        document.body.style.filter = "blur(2px) brightness(0.5)";
+        document.body.style.opacity = "0";
+      }, 2400);
+      setTimeout(() => { window.location.href = PROFILE_URL; }, 4800);
+      break;
+    }
 
     case cmd.startsWith('go '): {
       const d = cmd.split(' ')[1];
@@ -1131,6 +1148,35 @@ function handleCommand(raw) {
 }
 
 // ============================================================
+// EXIT / SURFACE
+// ============================================================
+function goProfile() {
+  // slow dissolve then navigate
+  document.body.style.transition = "filter 2.5s ease, opacity 2.5s ease";
+  const lines = ["disconnecting.", "signal lost.", "returning to surface."];
+  // print to output if visible, else just navigate
+  const o = document.getElementById('output');
+  if (o) {
+    lines.forEach((l, i) => {
+      setTimeout(() => {
+        const div = document.createElement('div');
+        div.className = "line line-dim";
+        div.textContent = l;
+        o.appendChild(div);
+        o.scrollTop = o.scrollHeight;
+      }, i * 800);
+    });
+  }
+  setTimeout(() => {
+    document.body.style.filter = "blur(2px) brightness(0.5)";
+    document.body.style.opacity = "0";
+  }, lines.length * 800);
+  setTimeout(() => {
+    window.location.href = PROFILE_URL;
+  }, lines.length * 800 + 2600);
+}
+
+// ============================================================
 // WIN
 // ============================================================
 function triggerWin() {
@@ -1144,6 +1190,7 @@ function triggerWin() {
     setTimeout(() => document.getElementById('w6').classList.add('show'), after+2800);
     setTimeout(() => document.getElementById('w7').classList.add('show'), after+3700);
     setTimeout(() => document.getElementById('w8').classList.add('show'), after+4900);
+    setTimeout(() => document.getElementById('w9').classList.add('show'), after+5600);
   }, 600);
 }
 
