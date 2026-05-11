@@ -939,6 +939,8 @@ function handleCommand(raw) {
         }, 2200);
       }, 1800);
     } else if ((cmd === 's' || cmd === 'south') && rooms['false_center'].exits.s) {
+      // after false center, hollow north opens to true center
+      rooms['hollow'].exits.n = 'center';
       currentRoom = 'hollow'; roomsVisited.add(currentRoom);
       moveCount++; describeRoom(currentRoom);
     } else { printEmpty(); printWarn("the wall is solid."); }
