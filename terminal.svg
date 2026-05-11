@@ -141,7 +141,7 @@
   <text x="24" y="46"  class="ln ln-dim t1">SYSTEM BOOT v2.1.0  --  READY</text>
   <text x="24" y="70"  class="ln ln-dim t2">------------------------------------</text>
   <text x="24" y="94"  class="ln t3">&gt; whoami</text>
-  <text x="24" y="118" class="ln ln-brt t4">unauthorized access detected</text>
+  <text x="24" y="118" class="ln ln-brt t4">[Redacted]</text>
   <text x="24" y="142" class="ln t5">&gt; cat /etc/identity</text>
   <text x="24" y="166" class="ln ln-brt t6">identity: student</text>
   <text x="24" y="190" class="ln t7">&gt; ls ./interests</text>
