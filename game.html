@@ -703,37 +703,20 @@ function getSpamLine() {
 // threshold and hollow require attunement, not just navigation
 // ============================================================
 function checkUnlocks() {
-  // threshold: requires listening AND some wandering OR humming
-  if (!thresholdUnlocked) {
-    if (listenTotal >= 2 && (humCount >= 1 || moveCount >= 10)) {
-      thresholdUnlocked = true;
-      // ensure passage_low.n points to threshold (it does by default)
-      // also quietly connect loop_b.n if player has been looping
-      if (roomsVisited.has('loop_b') || roomsVisited.has('loop_a')) {
-        rooms['loop_b'].exits.n = 'threshold';
-      }
-    } else {
-      // threshold exists in graph but redirects if not attuned
-      rooms['passage_low'].exits.n = 'passage_low_block';
-    }
-  }
-  if (thresholdUnlocked) {
+  // threshold unlocks once — never resets
+  if (!thresholdUnlocked && listenTotal >= 2 && (humCount >= 1 || moveCount >= 10)) {
+    thresholdUnlocked = true;
     rooms['passage_low'].exits.n = 'threshold';
+    if (roomsVisited.has('loop_b') || roomsVisited.has('loop_a')) {
+      rooms['loop_b'].exits.n = 'threshold';
+    }
   }
 
-  // hollow: requires more listening AND movement
-  if (!hollowUnlocked) {
-    if (listenTotal >= 4 && moveCount >= 6) {
-      hollowUnlocked = true;
-      // deep_hall.n and winding.n already point to hollow
-      // ensure false_center is still gated behind hollow
-    } else {
-      // deep_hall north loops back to deep_hall itself (confusing but not punishing)
-      rooms['deep_hall'].exits.n = 'deep_hall_echo';
-    }
-  }
-  if (hollowUnlocked) {
+  // hollow unlocks once — never resets
+  if (!hollowUnlocked && listenTotal >= 4 && moveCount >= 6) {
+    hollowUnlocked = true;
     rooms['deep_hall'].exits.n = 'hollow';
+    rooms['winding'].exits.n = 'hollow';
   }
 }
 
