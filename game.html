@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>261hz</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+ 
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+  :root {
+    --green: #00cc44;
+    --green-dim: #005520;
+    --green-brt: #00ff88;
+    --green-pale: #003311;
+    --bg: #050a05;
+    --cursor: #00ff55;
+  }
+ 
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--green);
+    font-family: 'VT323', 'Courier New', monospace;
+    font-size: 20px;
+    line-height: 1.5;
+    overflow: hidden;
+  }
+ 
+  /* CRT screen effect */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 3px,
+      rgba(0,0,0,0.08) 3px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+ 
+  /* Vignette */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none;
+    z-index: 101;
+  }
+ 
+  #screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 2.5rem;
+    overflow: hidden;
+  }
+ 
+  #header {
+    color: var(--green-dim);
+    border-bottom: 1px solid var(--green-pale);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    font-size: 16px;
+    letter-spacing: 2px;
+    display: flex;
+    justify-content: space-between;
+  }
+ 
+  #output {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+ 
+  #output::-webkit-scrollbar { display: none; }
+ 
+  .line {
+    min-height: 1.5em;
+    word-break: break-word;
+  }
+ 
+  .line-dim    { color: var(--green-dim); }
+  .line-brt    { color: var(--green-brt); }
+  .line-cmd    { color: var(--green); }
+  .line-empty  { min-height: 1em; }
+  .line-center { text-align: center; color: var(--green-brt); }
+  .line-warn   { color: #886600; }
+ 
+  #input-row {
+    display: flex;
+    align-items: center;
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--green-pale);
+  }
+ 
+  #prompt {
+    color: var(--green);
+    margin-right: 0.5rem;
+    flex-shrink: 0;
+  }
+ 
+  #input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--green);
+    font-family: inherit;
+    font-size: inherit;
+    flex: 1;
+    caret-color: var(--cursor);
+  }
+ 
+  /* depth indicator */
+  #depth-bar {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+ 
+  .depth-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green-pale);
+    transition: background 0.3s;
+  }
+  .depth-dot.active { background: var(--green-brt); }
+ 
+  /* win state */
+  #win-screen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 3rem;
+    text-align: center;
+    z-index: 200;
+  }
+ 
+  #win-screen.visible { display: flex; }
+ 
+  .win-line {
+    color: var(--green-brt);
+    font-size: 28px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+ 
+  .win-line.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+ 
+  .win-freq {
+    font-size: 72px;
+    color: var(--green);
+    letter-spacing: 4px;
+  }
+ 
+  .win-sub {
+    color: var(--green-dim);
+    font-size: 18px;
+  }
+ 
+  .win-restart {
+    margin-top: 2rem;
+    color: var(--green-dim);
+    font-size: 16px;
+    cursor: pointer;
+    border: 1px solid var(--green-pale);
+    padding: 0.3rem 1rem;
+    letter-spacing: 2px;
+  }
+ 
+  .win-restart:hover { color: var(--green); border-color: var(--green); }
+ 
+  /* flicker animation on boot */
+  @keyframes flicker {
+    0%   { opacity: 1; }
+    5%   { opacity: 0.8; }
+    10%  { opacity: 1; }
+    15%  { opacity: 0.9; }
+    20%  { opacity: 1; }
+    80%  { opacity: 1; }
+    85%  { opacity: 0.7; }
+    90%  { opacity: 1; }
+  }
+ 
+  .flicker { animation: flicker 0.4s ease 1; }
+</style>
+</head>
+<body>
+ 
+<div id="screen">
+  <div id="header">
+    <span>261HZ // MAZE</span>
+    <div id="depth-bar">
+      <span style="color:var(--green-dim); font-size:14px; margin-right:6px; letter-spacing:1px;">DEPTH</span>
+      <div class="depth-dot" id="d0"></div>
+      <div class="depth-dot" id="d1"></div>
+      <div class="depth-dot" id="d2"></div>
+      <div class="depth-dot" id="d3"></div>
+      <div class="depth-dot" id="d4"></div>
+      <div class="depth-dot" id="d5"></div>
+      <div class="depth-dot" id="d6"></div>
+    </div>
+  </div>
+ 
+  <div id="output"></div>
+ 
+  <div id="input-row">
+    <span id="prompt">&gt;</span>
+    <input id="input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" autofocus />
+  </div>
+</div>
+ 
+<div id="win-screen">
+  <div class="win-line win-freq" id="w1">261.63</div>
+  <div class="win-line" id="w2">middle c.</div>
+  <div class="win-line win-sub" id="w3">the note at the center of everything.</div>
+  <div class="win-line win-sub" id="w4">you were always going to find it.</div>
+  <div class="win-line win-sub" id="w5">now go play something.</div>
+  <div class="win-restart win-line" id="w6" onclick="restartGame()">[ play again ]</div>
+</div>
+ 
+<script>
+// ============================================================
+// MAZE DEFINITION
+// Each room has: desc, exits (n/s/e/w), and optional flavor
+// The maze has 7 depth levels, reached by going deeper
+// Depth 0 = entrance, Depth 6 = center (win)
+// ============================================================
+ 
+const rooms = {
+ 
+  // ---- ENTRANCE ----
+  entrance: {
+    id: 'entrance',
+    depth: 0,
+    desc: [
+      "the passage is wide here. almost welcoming.",
+      "the walls are rough but the floor is smooth.",
+      "you came from somewhere. you don't remember where."
+    ],
+    flavor: "exits: north, east",
+    exits: { n: 'hall_a', e: 'alcove_1' },
+    visited: false
+  },
+ 
+  alcove_1: {
+    id: 'alcove_1',
+    depth: 0,
+    desc: [
+      "a small indent in the wall. nothing here.",
+      "someone scratched something into the stone.",
+      "it just says: keep going."
+    ],
+    flavor: "exit: west",
+    exits: { w: 'entrance' },
+    visited: false
+  },
+ 
+  // ---- LEVEL 1 ----
+  hall_a: {
+    id: 'hall_a',
+    depth: 1,
+    desc: [
+      "a long corridor. the kind you walk faster in.",
+      "the ceiling is lower than you expected.",
+      "there is a turn somewhere ahead."
+    ],
+    flavor: "exits: north, south, east",
+    exits: { n: 'junction_1', s: 'entrance', e: 'dead_1' },
+    visited: false
+  },
+ 
+  dead_1: {
+    id: 'dead_1',
+    depth: 1,
+    desc: [
+      "the passage ends abruptly.",
+      "you press your hand against the wall.",
+      "it gives slightly. or maybe it doesn't."
+    ],
+    flavor: "exit: west",
+    exits: { w: 'hall_a' },
+    visited: false,
+    dead: true
+  },
+ 
+  junction_1: {
+    id: 'junction_1',
+    depth: 1,
+    desc: [
+      "three ways. you pause.",
+      "from one direction, a faint hum.",
+      "from another, nothing. from the third, also nothing."
+    ],
+    flavor: "exits: north, south, west",
+    exits: { n: 'passage_wide', s: 'hall_a', w: 'loop_a' },
+    visited: false
+  },
+ 
+  loop_a: {
+    id: 'loop_a',
+    depth: 1,
+    desc: [
+      "you turn left. then left again. then left.",
+      "you are back where you started.",
+      "or somewhere that looks exactly like it."
+    ],
+    flavor: "exits: east, north",
+    exits: { e: 'junction_1', n: 'loop_b' },
+    visited: false
+  },
+ 
+  loop_b: {
+    id: 'loop_b',
+    depth: 1,
+    desc: [
+      "the walls curve here. unusual.",
+      "the floor slopes down almost imperceptibly.",
+      "you feel like you've been going the wrong way for a long time."
+    ],
+    flavor: "exits: south, east",
+    exits: { s: 'loop_a', e: 'passage_wide' },
+    visited: false
+  },
+ 
+  // ---- LEVEL 2 ----
+  passage_wide: {
+    id: 'passage_wide',
+    depth: 2,
+    desc: [
+      "the passage opens up here. you can breathe.",
+      "something about this space feels like an exhale.",
+      "you think of a room you sat in once. music coming from another room."
+    ],
+    flavor: "exits: north, south, west",
+    exits: { n: 'narrow_1', s: 'junction_1', w: 'loop_b' },
+    visited: false
+  },
+ 
+  narrow_1: {
+    id: 'narrow_1',
+    depth: 2,
+    desc: [
+      "narrow. your shoulders brush both walls.",
+      "you move sideways.",
+      "the sound is closer here. low. almost felt more than heard."
+    ],
+    flavor: "exits: north, south, east",
+    exits: { n: 'chamber_a', s: 'passage_wide', e: 'dead_2' },
+    visited: false
+  },
+ 
+  dead_2: {
+    id: 'dead_2',
+    depth: 2,
+    desc: [
+      "you stop.",
+      "there is nothing ahead.",
+      "but standing here feels strangely necessary."
+    ],
+    flavor: "exit: west",
+    exits: { w: 'narrow_1' },
+    visited: false,
+    dead: true
+  },
+ 
+  // ---- LEVEL 3 ----
+  chamber_a: {
+    id: 'chamber_a',
+    depth: 3,
+    desc: [
+      "a small chamber. almost circular.",
+      "you sit down without meaning to.",
+      "the hum is clearer now. like a single held note."
+    ],
+    flavor: "exits: north, east, south",
+    exits: { n: 'passage_low', e: 'side_room', s: 'narrow_1' },
+    visited: false
+  },
+ 
+  side_room: {
+    id: 'side_room',
+    depth: 3,
+    desc: [
+      "a room off the main path.",
+      "it feels like a parenthesis. a thought inside a thought.",
+      "you linger longer than you planned."
+    ],
+    flavor: "exits: west, north",
+    exits: { w: 'chamber_a', n: 'dead_3' },
+    visited: false
+  },
+ 
+  dead_3: {
+    id: 'dead_3',
+    depth: 3,
+    desc: [
+      "a dead end.",
+      "but the air here is different. warmer.",
+      "you press your ear to the wall and hear something you can't name."
+    ],
+    flavor: "exit: south",
+    exits: { s: 'side_room' },
+    visited: false,
+    dead: true
+  },
+ 
+  passage_low: {
+    id: 'passage_low',
+    depth: 3,
+    desc: [
+      "you have to duck.",
+      "the walls press in. the ceiling presses down.",
+      "and yet you keep moving."
+    ],
+    flavor: "exits: north, south",
+    exits: { n: 'threshold', s: 'chamber_a' },
+    visited: false
+  },
+ 
+  // ---- LEVEL 4 ----
+  threshold: {
+    id: 'threshold',
+    depth: 4,
+    desc: [
+      "you stop at a threshold.",
+      "the passage ahead is darker. different.",
+      "this is the kind of door you only go through once."
+    ],
+    flavor: "exits: north, south",
+    exits: { n: 'deep_hall', s: 'passage_low' },
+    visited: false
+  },
+ 
+  deep_hall: {
+    id: 'deep_hall',
+    depth: 4,
+    desc: [
+      "deeper now. the walls are different here.",
+      "the lines are less straight. like someone drew them freehand.",
+      "you think: someone made this. someone sat down and drew this."
+    ],
+    flavor: "exits: north, east, west",
+    exits: { n: 'hollow', e: 'dead_4', w: 'winding' },
+    visited: false
+  },
+ 
+  dead_4: {
+    id: 'dead_4',
+    depth: 4,
+    desc: [
+      "a pocket in the maze.",
+      "some dead ends feel like mistakes.",
+      "this one doesn't."
+    ],
+    flavor: "exit: west",
+    exits: { w: 'deep_hall' },
+    visited: false,
+    dead: true
+  },
+ 
+  winding: {
+    id: 'winding',
+    depth: 4,
+    desc: [
+      "the path winds. no sharp turns.",
+      "it reminds you of something organic. a river. a melody.",
+      "you follow it."
+    ],
+    flavor: "exits: east, north",
+    exits: { e: 'deep_hall', n: 'hollow' },
+    visited: false
+  },
+ 
+  // ---- LEVEL 5 ----
+  hollow: {
+    id: 'hollow',
+    depth: 5,
+    desc: [
+      "a hollow in the rock. large enough to stand in.",
+      "the sound here is unmistakable now.",
+      "a single frequency. low and clear. like a piano key held down forever."
+    ],
+    flavor: "exits: north, south",
+    exits: { n: 'center', s: 'deep_hall' },
+    visited: false
+  },
+ 
+  // ---- CENTER (WIN) ----
+  center: {
+    id: 'center',
+    depth: 6,
+    desc: [
+      "you are at the center.",
+      "",
+      "there are no exits.",
+      "",
+      "there is only a sound.",
+      "low. steady. the same note, held.",
+      "",
+      "type: listen"
+    ],
+    flavor: "no exits.",
+    exits: {},
+    visited: false,
+    isCenter: true
+  }
+};
+ 
+// ============================================================
+// GAME STATE
+// ============================================================
+ 
+let currentRoom = 'entrance';
+let moveCount = 0;
+let roomsVisited = new Set();
+let gameOver = false;
+ 
+// ============================================================
+// OUTPUT
+// ============================================================
+ 
+function print(text, cls = 'line') {
+  const out = document.getElementById('output');
+  const div = document.createElement('div');
+  div.className = cls;
+  div.textContent = text;
+  out.appendChild(div);
+  out.scrollTop = out.scrollHeight;
+}
+ 
+function printEmpty() {
+  print('', 'line line-empty');
+}
+ 
+function printBrt(text) { print(text, 'line line-brt'); }
+function printDim(text) { print(text, 'line line-dim'); }
+function printCmd(text) { print('> ' + text, 'line line-cmd'); }
+function printWarn(text) { print(text, 'line line-warn'); }
+ 
+// ============================================================
+// DEPTH BAR
+// ============================================================
+ 
+function updateDepth(depth) {
+  for (let i = 0; i < 7; i++) {
+    const dot = document.getElementById('d' + i);
+    if (dot) {
+      dot.classList.toggle('active', i <= depth);
+    }
+  }
+}
+ 
+// ============================================================
+// ROOM DISPLAY
+// ============================================================
+ 
+function describeRoom(roomId, showExits = true) {
+  const room = rooms[roomId];
+  if (!room) return;
+ 
+  printEmpty();
+ 
+  room.desc.forEach(line => {
+    if (line === '') {
+      printEmpty();
+    } else if (room.isCenter) {
+      printBrt(line);
+    } else if (room.dead) {
+      printDim(line);
+    } else {
+      print(line);
+    }
+  });
+ 
+  if (showExits && !room.isCenter) {
+    printEmpty();
+    printDim(room.flavor);
+  }
+ 
+  updateDepth(room.depth);
+}
+ 
+// ============================================================
+// COMMANDS
+// ============================================================
+ 
+function handleCommand(raw) {
+  const cmd = raw.trim().toLowerCase();
+  if (!cmd) return;
+ 
+  printCmd(raw.trim());
+ 
+  if (gameOver) {
+    if (cmd === 'listen' || cmd === 'yes' || cmd === 'play') {
+      triggerWin();
+    } else {
+      printEmpty();
+      printBrt("there is only the sound.");
+      printDim("type: listen");
+    }
+    return;
+  }
+ 
+  const room = rooms[currentRoom];
+ 
+  switch(true) {
+ 
+    case cmd === 'help': {
+      printEmpty();
+      printDim("commands:");
+      printDim("  n / s / e / w   — move");
+      printDim("  look            — look around");
+      printDim("  where           — where you are");
+      printDim("  map             — how far you've come");
+      printDim("  listen          — listen");
+      printDim("  help            — this");
+      break;
+    }
+ 
+    case cmd === 'look': {
+      describeRoom(currentRoom);
+      break;
+    }
+ 
+    case cmd === 'where': {
+      printEmpty();
+      printDim("depth: " + room.depth);
+      printDim("moves: " + moveCount);
+      printDim("rooms seen: " + roomsVisited.size);
+      break;
+    }
+ 
+    case cmd === 'map': {
+      printEmpty();
+      const pct = Math.round((roomsVisited.size / Object.keys(rooms).length) * 100);
+      printDim("rooms explored: " + roomsVisited.size + " / " + Object.keys(rooms).length);
+      printDim("depth reached: " + room.depth + " / 6");
+      // simple ascii bar
+      const filled = Math.round(pct / 5);
+      const bar = '[' + '█'.repeat(filled) + '░'.repeat(20 - filled) + '] ' + pct + '%';
+      printDim(bar);
+      break;
+    }
+ 
+    case ['n','s','e','w','north','south','east','west'].includes(cmd): {
+      const dir = cmd[0]; // just first letter
+      if (room.exits[dir]) {
+        currentRoom = room.exits[dir];
+        rooms[currentRoom].visited = true;
+        roomsVisited.add(currentRoom);
+        moveCount++;
+        describeRoom(currentRoom);
+        if (rooms[currentRoom].isCenter) {
+          gameOver = true;
+        }
+      } else {
+        printEmpty();
+        printWarn("the wall is solid.");
+      }
+      break;
+    }
+ 
+    case cmd === 'listen' && room.isCenter: {
+      triggerWin();
+      break;
+    }
+ 
+    case cmd === 'listen': {
+      printEmpty();
+      const tuner = [
+        // depth 0
+        ["you hear your own breathing.", "nothing else."],
+        // depth 1
+        ["you hear your own breathing.", "and something. very faint.", "like a note played in another building."],
+        // depth 2
+        ["a hum. low and unsteady.", "you can't quite place it.", "somewhere between feeling and sound."],
+        // depth 3
+        ["clearer now. a single frequency.", "it wavers. like a string still settling.", "you are getting closer to something."],
+        // depth 4
+        ["unmistakable. a held note.", "low. steady. almost felt in the chest.", "you know this sound from somewhere."],
+        // depth 5
+        ["it fills the space here.", "one note. pure. unwavering.", "261.63 hz. middle c.", "the center is just ahead."],
+      ];
+      const responses = tuner[Math.min(room.depth, tuner.length - 1)];
+      responses.forEach(l => printDim(l));
+      break;
+    }
+ 
+    case cmd === 'touch' || cmd === 'feel': {
+      printEmpty();
+      if (room.dead) {
+        printDim("the wall is cool. slightly damp.");
+        printDim("you press harder. nothing.");
+      } else {
+        printDim("rough. solid. real.");
+      }
+      break;
+    }
+ 
+    case cmd === 'wait' || cmd === 'sit' || cmd === 'rest': {
+      printEmpty();
+      printDim("you wait.");
+      printDim("the maze doesn't mind.");
+      break;
+    }
+ 
+    case cmd === 'back' || cmd === 'return': {
+      printEmpty();
+      printWarn("you'll have to find your own way back.");
+      break;
+    }
+ 
+    case cmd === 'quit' || cmd === 'exit': {
+      printEmpty();
+      printDim("there is no exit.");
+      printDim("only through.");
+      break;
+    }
+ 
+    case cmd.startsWith('go '): {
+      // handle "go north" etc
+      const dir2 = cmd.split(' ')[1];
+      if (['north','south','east','west'].includes(dir2)) {
+        handleCommand(dir2[0]);
+        return;
+      }
+      printEmpty();
+      printWarn("unknown command. try: help");
+      break;
+    }
+ 
+    default: {
+      printEmpty();
+      // occasionally give a slightly poetic response to unknown commands
+      const unknowns = [
+        "the maze doesn't respond to that.",
+        "nothing happens.",
+        "silence.",
+        "the walls don't answer.",
+        "unknown. try: help"
+      ];
+      printWarn(unknowns[moveCount % unknowns.length]);
+      break;
+    }
+  }
+}
+ 
+// ============================================================
+// WIN
+// ============================================================
+ 
+function triggerWin() {
+  const ws = document.getElementById('win-screen');
+  ws.classList.add('visible');
+ 
+  // stagger the win lines
+  const lines = ['w1','w2','w3','w4','w5','w6'];
+  lines.forEach((id, i) => {
+    setTimeout(() => {
+      document.getElementById(id).classList.add('show');
+    }, 600 + i * 700);
+  });
+}
+ 
+function restartGame() {
+  // reset state
+  currentRoom = 'entrance';
+  moveCount = 0;
+  roomsVisited = new Set(['entrance']);
+  gameOver = false;
+ 
+  // reset visited flags
+  Object.values(rooms).forEach(r => r.visited = false);
+ 
+  // hide win screen
+  document.getElementById('win-screen').classList.remove('visible');
+  document.querySelectorAll('.win-line').forEach(el => el.classList.remove('show'));
+ 
+  // clear output
+  document.getElementById('output').innerHTML = '';
+ 
+  // reboot
+  boot();
+}
+ 
+// ============================================================
+// BOOT
+// ============================================================
+ 
+function boot() {
+  const out = document.getElementById('output');
+  out.classList.add('flicker');
+  setTimeout(() => out.classList.remove('flicker'), 400);
+ 
+  setTimeout(() => { printDim("SYSTEM BOOT v2.1.0  --  READY"); }, 200);
+  setTimeout(() => { printDim("------------------------------------"); }, 400);
+  setTimeout(() => { printEmpty(); }, 600);
+  setTimeout(() => { print("you are inside a maze."); }, 800);
+  setTimeout(() => { print("you don't remember arriving."); }, 1100);
+  setTimeout(() => { print("somewhere ahead, a sound."); }, 1400);
+  setTimeout(() => { printEmpty(); }, 1700);
+  setTimeout(() => { printDim("type: help for commands"); }, 1900);
+  setTimeout(() => {
+    describeRoom(currentRoom, true);
+    rooms[currentRoom].visited = true;
+    roomsVisited.add(currentRoom);
+  }, 2300);
+}
+ 
+// ============================================================
+// INPUT HANDLING
+// ============================================================
+ 
+document.getElementById('input').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const val = this.value;
+    this.value = '';
+    handleCommand(val);
+  }
+});
+ 
+// keep input focused
+document.addEventListener('click', () => {
+  document.getElementById('input').focus();
+});
+ 
+// start
+boot();
+</script>
+</body>
+</html>
