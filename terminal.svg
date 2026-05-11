@@ -151,5 +151,7 @@
   <text x="24" y="286" class="ln t11">&gt; </text>
  
   <!-- cursor: hidden until 7.5s, then blinks forever -->
-  <rect x="52" y="270" width="10" height="18" class="blink" style="opacity:0; animation-delay: 7.5s;"/>
+  <a href="https://261hz.github.io/261Hz/game.html" target="_blank">
+    <rect x="52" y="270" width="10" height="18" class="blink" style="opacity:0; animation-delay: 7.5s;"/>
+    </a>
 </svg>
