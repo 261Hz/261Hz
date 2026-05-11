@@ -50,7 +50,7 @@
  
       .blink {
         fill: #00ff55;
-        animation: blink 1s step-end infinite 7.5s;
+        animation: blink 1s step-end 200 7.5s;
       }
  
       @keyframes blink {
