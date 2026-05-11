@@ -143,11 +143,11 @@
   <text x="24" y="94"  class="ln t3">&gt; whoami</text>
   <text x="24" y="118" class="ln ln-brt t4">unauthorized access detected</text>
   <text x="24" y="142" class="ln t5">&gt; cat /etc/identity</text>
-  <text x="24" y="166" class="ln ln-brt t6">identity: [REDACTED]</text>
+  <text x="24" y="166" class="ln ln-brt t6">identity: student</text>
   <text x="24" y="190" class="ln t7">&gt; ls ./interests</text>
-  <text x="24" y="214" class="ln ln-brt t8">* * * * *</text>
+  <text x="24" y="214" class="ln ln-brt t8">piano (whence the name), tech - hence this profile</text>
   <text x="24" y="238" class="ln t9">&gt; cat status.txt</text>
-  <text x="24" y="262" class="ln ln-brt t10">* * * * *</text>
+  <text x="24" y="262" class="ln ln-brt t10">puttering away</text>
   <text x="24" y="286" class="ln t11">&gt; </text>
  
   <!-- cursor: hidden until 7.5s, then blinks forever -->
