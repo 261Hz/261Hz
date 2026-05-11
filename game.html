@@ -5,10 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>261hz</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
- 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
- 
+
   :root {
     --green: #00cc44;
     --green-dim: #005520;
@@ -17,203 +15,126 @@
     --bg: #050a05;
     --cursor: #00ff55;
   }
- 
+
   html, body {
     height: 100%;
     background: var(--bg);
     color: var(--green);
-    font-family: 'VT323', 'Courier New', monospace;
+    font-family: 'Courier New', Courier, monospace;
     font-size: 20px;
     line-height: 1.5;
     overflow: hidden;
+    transition: filter 2s ease;
   }
- 
-  /* CRT screen effect */
+
+  body.deep { filter: brightness(1.04); }
+  body.deep .line {
+    text-shadow: 0 0 2px #00ff88, 0 0 8px rgba(0,255,100,0.1);
+  }
+
   body::before {
     content: '';
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background: repeating-linear-gradient(
       to bottom,
-      transparent 0px,
-      transparent 3px,
-      rgba(0,0,0,0.08) 3px,
-      rgba(0,0,0,0.08) 4px
+      transparent 0px, transparent 3px,
+      rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px
     );
-    pointer-events: none;
-    z-index: 100;
+    pointer-events: none; z-index: 100;
+    transition: opacity 2s ease;
   }
- 
-  /* Vignette */
+  body.deep::before { opacity: 1.4; }
+
   body::after {
     content: '';
-    position: fixed;
-    inset: 0;
+    position: fixed; inset: 0;
     background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
-    pointer-events: none;
-    z-index: 101;
+    pointer-events: none; z-index: 101;
   }
- 
+
   #screen {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    padding: 2rem 2.5rem;
-    overflow: hidden;
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    padding: 2rem 2.5rem; overflow: hidden;
   }
- 
+
   #header {
     color: var(--green-dim);
     border-bottom: 1px solid var(--green-pale);
-    padding-bottom: 0.5rem;
-    margin-bottom: 1rem;
-    font-size: 16px;
-    letter-spacing: 2px;
-    display: flex;
-    justify-content: space-between;
+    padding-bottom: 0.5rem; margin-bottom: 1rem;
+    font-size: 16px; letter-spacing: 2px;
+    display: flex; justify-content: space-between; align-items: center;
   }
- 
+
   #output {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scrollbar-width: none;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    scrollbar-width: none; display: flex; flex-direction: column;
   }
- 
   #output::-webkit-scrollbar { display: none; }
- 
-  .line {
-    min-height: 1.5em;
-    word-break: break-word;
-  }
- 
-  .line-dim    { color: var(--green-dim); }
-  .line-brt    { color: var(--green-brt); }
-  .line-cmd    { color: var(--green); }
-  .line-empty  { min-height: 1em; }
-  .line-center { text-align: center; color: var(--green-brt); }
-  .line-warn   { color: #886600; }
- 
+
+  .line       { min-height: 1.5em; word-break: break-word; }
+  .line-dim   { color: var(--green-dim); }
+  .line-brt   { color: var(--green-brt); }
+  .line-cmd   { color: var(--green); }
+  .line-empty { min-height: 1em; }
+  .line-warn  { color: #886600; }
+
   #input-row {
-    display: flex;
-    align-items: center;
-    margin-top: 0.5rem;
-    padding-top: 0.5rem;
+    display: flex; align-items: center;
+    margin-top: 0.5rem; padding-top: 0.5rem;
     border-top: 1px solid var(--green-pale);
   }
- 
-  #prompt {
-    color: var(--green);
-    margin-right: 0.5rem;
-    flex-shrink: 0;
-  }
- 
+  #prompt { color: var(--green); margin-right: 0.5rem; flex-shrink: 0; }
   #input {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--green);
-    font-family: inherit;
-    font-size: inherit;
-    flex: 1;
-    caret-color: var(--cursor);
+    background: transparent; border: none; outline: none;
+    color: var(--green); font-family: inherit; font-size: inherit;
+    flex: 1; caret-color: var(--cursor);
   }
- 
-  /* depth indicator */
-  #depth-bar {
-    display: flex;
-    gap: 4px;
-    align-items: center;
-  }
- 
+
+  #depth-bar { display: flex; gap: 4px; align-items: center; }
   .depth-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--green-pale);
-    transition: background 0.3s;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green-pale); transition: background 0.4s;
   }
   .depth-dot.active { background: var(--green-brt); }
- 
-  /* win state */
+
   #win-screen {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: var(--bg);
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 1.5rem;
-    padding: 3rem;
-    text-align: center;
-    z-index: 200;
+    display: none; position: fixed; inset: 0; background: var(--bg);
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 1.2rem; padding: 3rem; text-align: center; z-index: 200;
   }
- 
   #win-screen.visible { display: flex; }
- 
+
   .win-line {
-    color: var(--green-brt);
-    font-size: 28px;
-    opacity: 0;
-    transform: translateY(8px);
-    transition: opacity 0.8s ease, transform 0.8s ease;
+    color: var(--green-brt); font-size: 24px;
+    opacity: 0; transform: translateY(6px);
+    transition: opacity 0.9s ease, transform 0.9s ease;
   }
- 
-  .win-line.show {
-    opacity: 1;
-    transform: translateY(0);
-  }
- 
-  .win-freq {
-    font-size: 72px;
-    color: var(--green);
-    letter-spacing: 4px;
-  }
- 
-  .win-sub {
-    color: var(--green-dim);
-    font-size: 18px;
-  }
- 
+  .win-line.show { opacity: 1; transform: translateY(0); }
+  .win-freq { font-size: 64px; letter-spacing: 4px; }
+  .win-sub  { color: var(--green-dim); font-size: 18px; }
+  .win-unsettling { color: var(--green); font-size: 20px; }
   .win-restart {
-    margin-top: 2rem;
-    color: var(--green-dim);
-    font-size: 16px;
-    cursor: pointer;
-    border: 1px solid var(--green-pale);
-    padding: 0.3rem 1rem;
-    letter-spacing: 2px;
+    margin-top: 1.5rem; color: var(--green-dim); font-size: 16px;
+    cursor: pointer; border: 1px solid var(--green-pale);
+    padding: 0.3rem 1rem; letter-spacing: 2px;
   }
- 
   .win-restart:hover { color: var(--green); border-color: var(--green); }
- 
-  /* flicker animation on boot */
+
   @keyframes flicker {
-    0%   { opacity: 1; }
-    5%   { opacity: 0.8; }
-    10%  { opacity: 1; }
-    15%  { opacity: 0.9; }
-    20%  { opacity: 1; }
-    80%  { opacity: 1; }
-    85%  { opacity: 0.7; }
-    90%  { opacity: 1; }
+    0%  { opacity: 1; } 5%  { opacity: 0.7; } 10% { opacity: 1; }
+    80% { opacity: 1; } 85% { opacity: 0.6; } 90% { opacity: 1; }
   }
- 
   .flicker { animation: flicker 0.4s ease 1; }
 </style>
 </head>
 <body>
- 
+
 <div id="screen">
   <div id="header">
     <span>261HZ // MAZE</span>
     <div id="depth-bar">
-      <span style="color:var(--green-dim); font-size:14px; margin-right:6px; letter-spacing:1px;">DEPTH</span>
+      <span style="color:var(--green-dim);font-size:14px;margin-right:6px;letter-spacing:1px;">DEPTH</span>
       <div class="depth-dot" id="d0"></div>
       <div class="depth-dot" id="d1"></div>
       <div class="depth-dot" id="d2"></div>
@@ -223,296 +144,468 @@
       <div class="depth-dot" id="d6"></div>
     </div>
   </div>
- 
   <div id="output"></div>
- 
   <div id="input-row">
     <span id="prompt">&gt;</span>
-    <input id="input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" autofocus />
+    <input id="input" type="text" autocomplete="off" autocorrect="off"
+           autocapitalize="off" spellcheck="false" autofocus />
   </div>
 </div>
- 
+
 <div id="win-screen">
   <div class="win-line win-freq" id="w1">261.63</div>
   <div class="win-line" id="w2">middle c.</div>
   <div class="win-line win-sub" id="w3">the note at the center of everything.</div>
   <div class="win-line win-sub" id="w4">you were always going to find it.</div>
   <div class="win-line win-sub" id="w5">now go play something.</div>
-  <div class="win-restart win-line" id="w6" onclick="restartGame()">[ play again ]</div>
+  <div class="win-line win-unsettling" id="w6">the strange thing is:</div>
+  <div class="win-line win-unsettling" id="w7">it was listening too.</div>
+  <div class="win-restart win-line" id="w8" onclick="restartGame()">[ play again ]</div>
 </div>
- 
+
 <script>
 // ============================================================
-// MAZE DEFINITION
-// Each room has: desc, exits (n/s/e/w), and optional flavor
-// The maze has 7 depth levels, reached by going deeper
-// Depth 0 = entrance, Depth 6 = center (win)
+// AUDIO
 // ============================================================
- 
+let audioCtx = null, osc1 = null, osc2 = null, gainNode = null;
+
+function initAudio() {
+  if (audioCtx) return;
+  try {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    gainNode = audioCtx.createGain();
+    gainNode.gain.value = 0;
+
+    osc1 = audioCtx.createOscillator();
+    osc1.frequency.value = 261.63;
+    osc1.type = 'sine';
+    osc1.connect(gainNode);
+    osc1.start();
+
+    osc2 = audioCtx.createOscillator();
+    osc2.frequency.value = 262.03;
+    osc2.type = 'sine';
+    const g2 = audioCtx.createGain();
+    g2.gain.value = 0.4;
+    osc2.connect(g2);
+    g2.connect(gainNode);
+    osc2.start();
+
+    gainNode.connect(audioCtx.destination);
+  } catch(e) {}
+}
+
+function setVolume(target, dur) {
+  if (!gainNode) return;
+  gainNode.gain.linearRampToValueAtTime(target, audioCtx.currentTime + dur);
+}
+
+function fadeInAudio(depth) {
+  if (!audioCtx) return;
+  const vols = { 4:0.006, 5:0.015, 6:0.025 };
+  const vol = vols[depth] || 0;
+  if (vol > 0) setVolume(vol, 2.5);
+  if (osc2 && depth >= 4) {
+    const detune = { 4:0.3, 5:0.15, 6:0.05 }[depth] || 0.4;
+    osc2.frequency.setTargetAtTime(261.63 + detune, audioCtx.currentTime, 3.0);
+  }
+}
+
+function fadeOutAudio() {
+  if (!gainNode) return;
+  setVolume(0, 1.5);
+  if (osc2) osc2.frequency.setTargetAtTime(262.03, audioCtx.currentTime + 2, 1.0);
+}
+
+function nudgeAudio() {
+  if (!gainNode || !audioCtx) return;
+  setVolume(Math.min(gainNode.gain.value + 0.008, 0.04), 1.0);
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let currentRoom = 'entrance';
+let moveCount = 0;
+let roomsVisited = new Set();
+let gameOver = false;
+let listenTotal = 0;
+let bootVersion = '2.1.0';
+let runCount = 0;
+let humCount = 0;         // track humming — opens geometry after threshold
+let rushTimer = null;     // detect fast movement
+let rushCount = 0;        // moves made quickly
+let lieUsed = false;      // directional lie — once only
+const globalEvents = new Set();
+const askedQuestions = new Set();
+const visitCounts = {};
+
+function recordVisit(id) { visitCounts[id] = (visitCounts[id] || 0) + 1; }
+
+// rush detection
+function recordRush() {
+  rushCount++;
+  clearTimeout(rushTimer);
+  rushTimer = setTimeout(() => { rushCount = 0; }, 10000);
+}
+
+function isRushing() { return rushCount >= 5; }
+
+// ============================================================
+// IDLE TIMER
+// ============================================================
+let idleTimer = null;
+function resetIdle() {
+  clearTimeout(idleTimer);
+  const room = rooms[currentRoom];
+  if (room && room.depth >= 5 && !gameOver) {
+    idleTimer = setTimeout(() => {
+      printEmpty();
+      printDim("you can hear it even when you stop typing.");
+    }, 20000);
+  }
+}
+
+// ============================================================
+// ROOMS
+// ============================================================
+// descs = array of description versions (compressed on revisit)
+// flavor = shown only at depth 0-3. depth 4+ uses impressionistic prose instead.
+// impressions = impressionistic exit descriptions for depth 4+ rooms (per direction)
 const rooms = {
- 
-  // ---- ENTRANCE ----
+
+  // ---- DEPTH 0 ----
   entrance: {
-    id: 'entrance',
-    depth: 0,
-    desc: [
-      "the passage is wide here. almost welcoming.",
-      "the walls are rough but the floor is smooth.",
-      "you came from somewhere. you don't remember where."
+    id:'entrance', depth:0,
+    descs:[
+      ["the passage is wide here. almost welcoming.",
+       "the walls are rough but the floor is smooth.",
+       "you came from somewhere. you don't remember where."],
+      ["the passage is wide here. less welcoming now.",  // altered on return from deep
+       "the floor is smooth.",
+       "you came from somewhere."],
+      ["wide here.","smooth.","somewhere."],
+      ["here."]
     ],
-    flavor: "exits: north, east",
-    exits: { n: 'hall_a', e: 'alcove_1' },
-    visited: false
+    flavor:"exits: north, east",
+    exits:{ n:'hall_a', e:'alcove_1' }
   },
- 
+
   alcove_1: {
-    id: 'alcove_1',
-    depth: 0,
-    desc: [
-      "a small indent in the wall. nothing here.",
-      "someone scratched something into the stone.",
-      "it just says: keep going."
+    id:'alcove_1', depth:0,
+    descs:[
+      ["a small indent in the wall. nothing here.",
+       "someone scratched something into the stone.",
+       "it just says: keep going."],
+      ["the indent. keep going."],
+      ["keep going."]
     ],
-    flavor: "exit: west",
-    exits: { w: 'entrance' },
-    visited: false
+    flavor:"exit: west",
+    exits:{ w:'entrance' }, dead:true
   },
- 
-  // ---- LEVEL 1 ----
+
+  // ---- DEPTH 1 ----
   hall_a: {
-    id: 'hall_a',
-    depth: 1,
-    desc: [
-      "a long corridor. the kind you walk faster in.",
-      "the ceiling is lower than you expected.",
-      "there is a turn somewhere ahead."
+    id:'hall_a', depth:1,
+    descs:[
+      ["a long corridor. the kind you walk faster in.",
+       "the ceiling is lower than you expected.",
+       "there is a turn somewhere ahead."],
+      ["the corridor is narrower than before.",  // alternate when reached from unusual direction
+       "you don't remember the ceiling being this low.",
+       "the turn ahead."],
+      ["corridor. lower ceiling. the turn."],
+      ["corridor."]
     ],
-    flavor: "exits: north, south, east",
-    exits: { n: 'junction_1', s: 'entrance', e: 'dead_1' },
-    visited: false
+    flavor:"exits: north, south, east",
+    exits:{ n:'junction_1', s:'entrance', e:'dead_1' }
   },
- 
+
   dead_1: {
-    id: 'dead_1',
-    depth: 1,
-    desc: [
-      "the passage ends abruptly.",
-      "you press your hand against the wall.",
-      "it gives slightly. or maybe it doesn't."
+    id:'dead_1', depth:1,
+    descs:[
+      ["the passage ends abruptly.",
+       "you press your hand against the wall.",
+       "it gives slightly. or maybe it doesn't."],
+      ["the wall. you press it. nothing."],
+      ["the wall."]
     ],
-    flavor: "exit: west",
-    exits: { w: 'hall_a' },
-    visited: false,
-    dead: true
+    flavor:"exit: west",
+    exits:{ w:'hall_a' }, dead:true
   },
- 
+
   junction_1: {
-    id: 'junction_1',
-    depth: 1,
-    desc: [
-      "three ways. you pause.",
-      "from one direction, a faint hum.",
-      "from another, nothing. from the third, also nothing."
+    id:'junction_1', depth:1,
+    descs:[
+      ["three ways. you pause.",
+       "from one direction, a faint hum.",
+       "from another, nothing. from the third, also nothing."],
+      ["three ways.", "the hum from one direction."],
+      ["three ways. the hum."]
     ],
-    flavor: "exits: north, south, west",
-    exits: { n: 'passage_wide', s: 'hall_a', w: 'loop_a' },
-    visited: false
+    flavor:"exits: north, south, west",
+    exits:{ n:'passage_wide', s:'hall_a', w:'loop_a' }
   },
- 
+
   loop_a: {
-    id: 'loop_a',
-    depth: 1,
-    desc: [
-      "you turn left. then left again. then left.",
-      "you are back where you started.",
-      "or somewhere that looks exactly like it."
+    id:'loop_a', depth:1,
+    descs:[
+      ["you turn left. then left again. then left.",
+       "you are back where you started.",
+       "or somewhere that looks exactly like it."],
+      ["the room is familiar.", "you've stood here before."],
+      ["you are almost certain you've stood here before."],
+      ["there should be another exit here."]
     ],
-    flavor: "exits: east, north",
-    exits: { e: 'junction_1', n: 'loop_b' },
-    visited: false
+    flavor:"exits: east, north",
+    exits:{ e:'junction_1', n:'loop_b' }
   },
- 
+
   loop_b: {
-    id: 'loop_b',
-    depth: 1,
-    desc: [
-      "the walls curve here. unusual.",
-      "the floor slopes down almost imperceptibly.",
-      "you feel like you've been going the wrong way for a long time."
+    id:'loop_b', depth:1,
+    descs:[
+      ["the walls curve here. unusual.",
+       "the floor slopes down almost imperceptibly.",
+       "you feel like you've been going the wrong way for a long time."],
+      ["the curved walls. the slope. wrong way."],
+      ["wrong way."]
     ],
-    flavor: "exits: south, east",
-    exits: { s: 'loop_a', e: 'passage_wide' },
-    visited: false
+    flavor:"exits: south, east",
+    exits:{ s:'loop_a', e:'passage_wide' }
+    // loop_b.n → threshold unlocks non-euclidean after 20 moves
   },
- 
-  // ---- LEVEL 2 ----
+
+  // ---- DEPTH 2 ----
   passage_wide: {
-    id: 'passage_wide',
-    depth: 2,
-    desc: [
-      "the passage opens up here. you can breathe.",
-      "something about this space feels like an exhale.",
-      "you think of a room you sat in once. music coming from another room."
+    id:'passage_wide', depth:2,
+    descs:[
+      ["the passage opens up here. you can breathe.",
+       "something about this space feels like an exhale.",
+       "you think of a room you sat in once. music coming from another room."],
+      ["the wide passage. the exhale.", "the music from another room."],
+      ["the exhale."]
     ],
-    flavor: "exits: north, south, west",
-    exits: { n: 'narrow_1', s: 'junction_1', w: 'loop_b' },
-    visited: false
+    flavor:"exits: north, south, west, east",
+    exits:{ n:'narrow_1', s:'junction_1', w:'loop_b', e:'nowhere_a' }
   },
- 
+
   narrow_1: {
-    id: 'narrow_1',
-    depth: 2,
-    desc: [
-      "narrow. your shoulders brush both walls.",
-      "you move sideways.",
-      "the sound is closer here. low. almost felt more than heard."
+    id:'narrow_1', depth:2,
+    descs:[
+      ["narrow. your shoulders brush both walls.",
+       "you move sideways.",
+       "the sound is closer here. low. almost felt more than heard."],
+      ["narrow. sideways. the sound, closer."],
+      ["narrow.", "closer."]
     ],
-    flavor: "exits: north, south, east",
-    exits: { n: 'chamber_a', s: 'passage_wide', e: 'dead_2' },
-    visited: false
+    flavor:"exits: north, south, east",
+    exits:{ n:'chamber_a', s:'passage_wide', e:'dead_2' }
   },
- 
+
   dead_2: {
-    id: 'dead_2',
-    depth: 2,
-    desc: [
-      "you stop.",
-      "there is nothing ahead.",
-      "but standing here feels strangely necessary."
+    id:'dead_2', depth:2,
+    descs:[
+      ["you stop.",
+       "there is nothing ahead.",
+       "but standing here feels strangely necessary."],
+      ["you stop again.", "still nothing.", "still necessary."],
+      ["you stop.", "necessary."]
     ],
-    flavor: "exit: west",
-    exits: { w: 'narrow_1' },
-    visited: false,
-    dead: true
+    flavor:"exit: west",
+    exits:{ w:'narrow_1' }, dead:true,
+    listenCount:0, hiddenUnlocked:false
   },
- 
-  // ---- LEVEL 3 ----
+
+  // ---- unnecessary region — no payoff, just space ----
+  nowhere_a: {
+    id:'nowhere_a', depth:2,
+    descs:[
+      ["a passage you weren't expecting.",
+       "it goes nowhere obvious.",
+       "you walk it anyway."],
+      ["the passage again.", "still nowhere."],
+      ["nowhere."]
+    ],
+    flavor:"exits: east, west",
+    exits:{ e:'nowhere_b', w:'passage_wide' }
+  },
+  nowhere_b: {
+    id:'nowhere_b', depth:2,
+    descs:[
+      ["another room.", "nothing here.", "you check twice."],
+      ["nothing here.", "you already knew."],
+      ["nothing."]
+    ],
+    flavor:"exits: west, north",
+    exits:{ w:'nowhere_a', n:'nowhere_c' }
+  },
+  nowhere_c: {
+    id:'nowhere_c', depth:2,
+    descs:[
+      ["a dead end.", "not warm. not cold.", "just a room that exists."],
+      ["just a room."],
+      ["a room."]
+    ],
+    flavor:"exit: south",
+    exits:{ s:'nowhere_b' }, dead:true
+  },
+
+  // ---- DEPTH 3 ----
   chamber_a: {
-    id: 'chamber_a',
-    depth: 3,
-    desc: [
-      "a small chamber. almost circular.",
-      "you sit down without meaning to.",
-      "the hum is clearer now. like a single held note."
+    id:'chamber_a', depth:3,
+    descs:[
+      ["a small chamber. almost circular.",
+       "you sit down without meaning to.",
+       "the hum is clearer now. like a single held note."],
+      ["the chamber. almost circular.", "the hum, clearer."],
+      ["the hum."]
     ],
-    flavor: "exits: north, east, south",
-    exits: { n: 'passage_low', e: 'side_room', s: 'narrow_1' },
-    visited: false
+    flavor:"exits: north, east, south",
+    exits:{ n:'passage_low', e:'side_room', s:'narrow_1' }
   },
- 
+
   side_room: {
-    id: 'side_room',
-    depth: 3,
-    desc: [
-      "a room off the main path.",
-      "it feels like a parenthesis. a thought inside a thought.",
-      "you linger longer than you planned."
+    id:'side_room', depth:3,
+    descs:[
+      ["a room off the main path.",
+       "it feels like a parenthesis. a thought inside a thought.",
+       "you linger longer than you planned."],
+      ["the parenthesis.", "you linger."],
+      ["a thought inside a thought."]
     ],
-    flavor: "exits: west, north",
-    exits: { w: 'chamber_a', n: 'dead_3' },
-    visited: false
+    flavor:"exits: west, north",
+    exits:{ w:'chamber_a', n:'dead_3' }
   },
- 
+
   dead_3: {
-    id: 'dead_3',
-    depth: 3,
-    desc: [
-      "a dead end.",
-      "but the air here is different. warmer.",
-      "you press your ear to the wall and hear something you can't name."
+    id:'dead_3', depth:3,
+    descs:[
+      ["a dead end.",
+       "but the air here is different. warmer.",
+       "you press your ear to the wall and hear something you can't name."],
+      ["the dead end. warmer.", "still can't name it."],
+      ["warmer."]
     ],
-    flavor: "exit: south",
-    exits: { s: 'side_room' },
-    visited: false,
-    dead: true
+    flavor:"exit: south",
+    exits:{ s:'side_room' }, dead:true
   },
- 
+
   passage_low: {
-    id: 'passage_low',
-    depth: 3,
-    desc: [
-      "you have to duck.",
-      "the walls press in. the ceiling presses down.",
-      "and yet you keep moving."
+    id:'passage_low', depth:3,
+    descs:[
+      ["you have to duck.",
+       "the walls press in. the ceiling presses down.",
+       "and yet you keep moving."],
+      ["ducking again.", "pressing in."],
+      ["pressing."]
     ],
-    flavor: "exits: north, south",
-    exits: { n: 'threshold', s: 'chamber_a' },
-    visited: false
+    flavor:"exits: north, south",
+    exits:{ n:'threshold', s:'chamber_a' }
   },
- 
-  // ---- LEVEL 4 ----
+
+  // ---- DEPTH 4 — no exit labels from here. impressionistic only. ----
   threshold: {
-    id: 'threshold',
-    depth: 4,
-    desc: [
-      "you stop at a threshold.",
-      "the passage ahead is darker. different.",
-      "this is the kind of door you only go through once."
+    id:'threshold', depth:4,
+    descs:[
+      ["you stop at a threshold.",
+       "the passage ahead is darker. different.",
+       "this is the kind of door you only go through once."],
+      ["the threshold.", "darker ahead."],
+      ["the threshold."]
     ],
-    flavor: "exits: north, south",
-    exits: { n: 'deep_hall', s: 'passage_low' },
-    visited: false
+    // no flavor — replaced by impressions at depth 4+
+    impressions:{
+      n:"something opens into darkness.",
+      s:"the way back feels uncertain."
+    },
+    exits:{ n:'deep_hall', s:'passage_low' }
   },
- 
+
   deep_hall: {
-    id: 'deep_hall',
-    depth: 4,
-    desc: [
-      "deeper now. the walls are different here.",
-      "the lines are less straight. like someone drew them freehand.",
-      "you think: someone made this. someone sat down and drew this."
+    id:'deep_hall', depth:4,
+    descs:[
+      ["deeper now. the walls are different here.",
+       "the lines are less straight. like someone drew them freehand.",
+       "someone sat down and drew this.",
+       "you wonder if they knew someone would find it."],
+      ["the freehand walls.", "someone drew this.", "they knew."],
+      ["they knew."]
     ],
-    flavor: "exits: north, east, west",
-    exits: { n: 'hollow', e: 'dead_4', w: 'winding' },
-    visited: false
+    impressions:{
+      n:"the narrower passage feels familiar.",
+      e:"a pocket in the dark.",
+      w:"something winds away from you.",
+      // deep_hall.w → entrance (altered) after sufficient depth traversal
+    },
+    exits:{ n:'hollow', e:'dead_4', w:'winding' }
   },
- 
+
   dead_4: {
-    id: 'dead_4',
-    depth: 4,
-    desc: [
-      "a pocket in the maze.",
-      "some dead ends feel like mistakes.",
-      "this one doesn't."
+    id:'dead_4', depth:4,
+    descs:[
+      ["a pocket in the maze.",
+       "some dead ends feel like mistakes.",
+       "this one doesn't."],
+      ["the pocket.", "not a mistake."],
+      ["not a mistake."]
     ],
-    flavor: "exit: west",
-    exits: { w: 'deep_hall' },
-    visited: false,
-    dead: true
+    impressions:{ w:"behind you, the air is colder." },
+    exits:{ w:'deep_hall' }, dead:true
   },
- 
+
   winding: {
-    id: 'winding',
-    depth: 4,
-    desc: [
-      "the path winds. no sharp turns.",
-      "it reminds you of something organic. a river. a melody.",
-      "you follow it."
+    id:'winding', depth:4,
+    descs:[
+      ["the path winds. no sharp turns.",
+       "it reminds you of something organic. a river. a melody.",
+       "you follow it."],
+      ["the winding path.", "a melody. you follow."],
+      ["you follow."]
     ],
-    flavor: "exits: east, north",
-    exits: { e: 'deep_hall', n: 'hollow' },
-    visited: false
+    impressions:{
+      e:"something opens to your right.",
+      n:"a passage you almost didn't notice."
+      // winding.e → deep_hall; winding.n → threshold after 2 visits
+    },
+    exits:{ e:'deep_hall', n:'hollow' }
   },
- 
-  // ---- LEVEL 5 ----
+
+  // ---- DEPTH 5 ----
   hollow: {
-    id: 'hollow',
-    depth: 5,
-    desc: [
-      "a hollow in the rock. large enough to stand in.",
-      "the sound here is unmistakable now.",
-      "a single frequency. low and clear. like a piano key held down forever."
+    id:'hollow', depth:5,
+    descs:[
+      ["a hollow in the rock. large enough to stand in.",
+       "the sound here is unmistakable now.",
+       "a single frequency. low and clear. like a piano key held down forever.",
+       "the sound seems closer than the geometry allows.",
+       "somewhere above you: a cursor blinks in time with your breathing."],
+      ["the hollow.", "the frequency.", "closer than the geometry allows."],
+      ["closer."]
     ],
-    flavor: "exits: north, south",
-    exits: { n: 'center', s: 'deep_hall' },
-    visited: false
+    impressions:{
+      n:"something pulls forward.",
+      s:"the way back feels very far."
+    },
+    exits:{ n:'false_center', s:'deep_hall' }
   },
- 
-  // ---- CENTER (WIN) ----
+
+  // ---- FALSE CENTER ----
+  false_center: {
+    id:'false_center', depth:5,
+    descs:[[
+      "the sound is overwhelming here.",
+      "the walls thin.",
+      "there is nowhere left to go.",
+      "",
+      "type: listen"
+    ]],
+    exits:{}, isFalseCenter:true
+  },
+
+  // ---- TRUE CENTER ----
   center: {
-    id: 'center',
-    depth: 6,
-    desc: [
+    id:'center', depth:6,
+    descs:[[
       "you are at the center.",
       "",
       "there are no exits.",
@@ -520,334 +613,660 @@ const rooms = {
       "there is only a sound.",
       "low. steady. the same note, held.",
       "",
+      "the floor is smooth here too.",
+      "",
       "type: listen"
-    ],
-    flavor: "no exits.",
-    exits: {},
-    visited: false,
-    isCenter: true
+    ]],
+    exits:{}, isCenter:true
   }
 };
- 
+
 // ============================================================
-// GAME STATE
+// IMPRESSIONISTIC EXIT PROSE — depth 4+
+// Called instead of flavor text. Returns lines describing
+// available passages without compass directions.
 // ============================================================
- 
-let currentRoom = 'entrance';
-let moveCount = 0;
-let roomsVisited = new Set();
-let gameOver = false;
- 
+function getImpressionLines(room) {
+  if (!room.impressions) return [];
+  const lines = [];
+  const dirs = Object.keys(room.exits);
+  dirs.forEach(dir => {
+    if (room.impressions[dir]) lines.push(room.impressions[dir]);
+  });
+  // if impressions don't cover all exits, add a generic remainder
+  const uncovered = dirs.filter(d => !room.impressions[d]);
+  if (uncovered.length > 0) {
+    lines.push("something else opens, indistinct.");
+  }
+  return lines;
+}
+
+// ============================================================
+// ROOM DESCRIPTION
+// ============================================================
+function getRoomDesc(room) {
+  const count = visitCounts[room.id] || 0;
+  // rushing compresses descriptions faster
+  const speedMult = isRushing() ? 2 : 1;
+  const idx = Math.min(Math.floor(count * speedMult), room.descs.length - 1);
+  return room.descs[idx];
+}
+
+function getMemoryLine(roomId) {
+  if (roomId === 'hall_a' && moveCount > 15 && roomsVisited.has('hall_a'))
+    return "you've walked this corridor before. or one very much like it.";
+  if (roomId === 'threshold' && roomsVisited.has('dead_3'))
+    return "you are carrying the sound with you now.";
+  if (roomId === 'deep_hall' && roomsVisited.has('loop_b') && roomsVisited.has('loop_a'))
+    return "you wonder how many lines it took.";
+  if (roomId === 'hollow' && roomsVisited.has('false_center'))
+    return "you've been here before. something is different.";
+  if (roomId === 'hollow' && roomsVisited.has('center'))
+    return "you've heard this before. you came back anyway.";
+  return null;
+}
+
 // ============================================================
 // OUTPUT
 // ============================================================
- 
-function print(text, cls = 'line') {
-  const out = document.getElementById('output');
+const out = () => document.getElementById('output');
+
+function print(text, cls='line') {
   const div = document.createElement('div');
   div.className = cls;
   div.textContent = text;
-  out.appendChild(div);
-  out.scrollTop = out.scrollHeight;
+  out().appendChild(div);
+  out().scrollTop = out().scrollHeight;
+  return div;
 }
- 
-function printEmpty() {
-  print('', 'line line-empty');
-}
- 
-function printBrt(text) { print(text, 'line line-brt'); }
-function printDim(text) { print(text, 'line line-dim'); }
-function printCmd(text) { print('> ' + text, 'line line-cmd'); }
-function printWarn(text) { print(text, 'line line-warn'); }
- 
+function printEmpty()  { print('', 'line line-empty'); }
+function printBrt(t)   { print(t, 'line line-brt'); }
+function printDim(t)   { print(t, 'line line-dim'); }
+function printCmd(t)   { print('> ' + t, 'line line-cmd'); }
+function printWarn(t)  { print(t, 'line line-warn'); }
+
 // ============================================================
 // DEPTH BAR
 // ============================================================
- 
 function updateDepth(depth) {
   for (let i = 0; i < 7; i++) {
     const dot = document.getElementById('d' + i);
-    if (dot) {
-      dot.classList.toggle('active', i <= depth);
-    }
+    if (dot) dot.classList.toggle('active', i <= depth);
   }
+  if (depth >= 5) document.body.classList.add('deep');
+  resetIdle();
 }
- 
+
 // ============================================================
-// ROOM DISPLAY
+// DESCRIBE ROOM
 // ============================================================
- 
-function describeRoom(roomId, showExits = true) {
+function describeRoom(roomId, showExits=true) {
   const room = rooms[roomId];
   if (!room) return;
- 
+
+  recordVisit(roomId);
   printEmpty();
- 
-  room.desc.forEach(line => {
-    if (line === '') {
-      printEmpty();
-    } else if (room.isCenter) {
-      printBrt(line);
-    } else if (room.dead) {
-      printDim(line);
-    } else {
-      print(line);
-    }
+
+  const desc = getRoomDesc(room);
+  desc.forEach(line => {
+    if (line === '') printEmpty();
+    else if (room.isCenter || room.isFalseCenter) printBrt(line);
+    else if (room.dead) printDim(line);
+    else print(line);
   });
- 
-  if (showExits && !room.isCenter) {
+
+  // one-time: maze breathing
+  if (!globalEvents.has('breathing') && room.depth >= 2 && Math.random() < 0.25) {
+    globalEvents.add('breathing');
     printEmpty();
-    printDim(room.flavor);
+    printDim("for a moment, you think the maze is breathing.");
   }
- 
+
+  // gravitational pull near center
+  if (room.depth >= 5 && !room.isCenter && !room.isFalseCenter && Math.random() < 0.35) {
+    printEmpty();
+    printDim("without thinking, you move toward it.");
+  }
+
+  const memory = getMemoryLine(roomId);
+  if (memory) { printEmpty(); printDim(memory); }
+
+  // exits: explicit for depth 0-3, impressionistic for depth 4+
+  if (showExits && !room.isCenter && !room.isFalseCenter) {
+    if (room.depth >= 4) {
+      const impressions = getImpressionLines(room);
+      if (impressions.length > 0) {
+        printEmpty();
+        impressions.forEach(l => printDim(l));
+      }
+    } else {
+      // depth 5+ on revisit: strip even the flavor
+      if (room.depth < 5 || (visitCounts[room.id] || 0) <= 1) {
+        printEmpty();
+        printDim(room.flavor);
+      }
+    }
+  }
+
   updateDepth(room.depth);
+  if (audioCtx && room.depth >= 4) fadeInAudio(room.depth);
+  checkNonEuclidean();
+  checkHumGeometry();
 }
- 
+
+// ============================================================
+// NON-EUCLIDEAN TRANSITIONS
+// ============================================================
+function checkNonEuclidean() {
+  // after 20 moves: loop_b quietly gains north → threshold
+  if (moveCount > 20 && !rooms['loop_b']._bridged) {
+    rooms['loop_b']._bridged = true;
+    rooms['loop_b'].exits.n = 'threshold';
+    rooms['loop_b'].impressions = rooms['loop_b'].impressions || {};
+    // no announcement
+  }
+
+  // deep_hall west → entrance (altered) after player has been to threshold+
+  if (roomsVisited.has('threshold') && !rooms['deep_hall']._collapsed) {
+    rooms['deep_hall']._collapsed = true;
+    rooms['deep_hall'].exits.w = 'entrance'; // impossible return
+    rooms['deep_hall'].impressions.w = "behind you: something that looks like the beginning.";
+  }
+
+  // winding: after 2 visits, north mutates quietly to threshold
+  if ((visitCounts['winding'] || 0) >= 2 && !rooms['winding']._mutated) {
+    rooms['winding']._mutated = true;
+    rooms['winding'].exits.n = 'threshold';
+  }
+}
+
+// ============================================================
+// HUM OPENS GEOMETRY
+// ============================================================
+function checkHumGeometry() {
+  // after humming 3+ times: dead_3 gains a south exit to chamber_a
+  // (it already has that — so instead open a path from side_room north → passage_low)
+  if (humCount >= 3 && !globalEvents.has('humGeometry')) {
+    globalEvents.add('humGeometry');
+    rooms['side_room'].exits.n = 'passage_low';
+    // no announcement
+  }
+}
+
+// ============================================================
+// SKIP (dream displacement)
+// ============================================================
+function maybeSkip(dir) {
+  const room = rooms[currentRoom];
+  if (room.depth >= 3 && moveCount > 15 && Math.random() < 0.06) {
+    const deeper = ['threshold','hollow','center'].find(id =>
+      rooms[id].depth > room.depth && !roomsVisited.has(id)
+    );
+    if (deeper) {
+      printEmpty();
+      printDim("you walk for a long time.");
+      setTimeout(() => {
+        printEmpty();
+        printDim("[...]");
+        setTimeout(() => {
+          printEmpty();
+          printDim("you are somewhere deeper now.");
+          setTimeout(() => {
+            currentRoom = deeper;
+            roomsVisited.add(currentRoom);
+            moveCount++;
+            describeRoom(currentRoom);
+            if (rooms[currentRoom].isCenter) gameOver = true;
+          }, 600);
+        }, 800);
+      }, 800);
+      return true;
+    }
+  }
+  return false;
+}
+
+// ============================================================
+// DIRECTIONAL LIE
+// ============================================================
+function maybeLie(dir) {
+  // once, at depth 3+, player walks east — response says they walked east
+  // but they end up in a room with exit: west only
+  if (!lieUsed && dir === 'e' && rooms[currentRoom].depth >= 3 && Math.random() < 0.15) {
+    lieUsed = true;
+    printEmpty();
+    printDim("you walk east for a long time.");
+    setTimeout(() => {
+      printEmpty();
+      // land in dead_1 (a room that only has west exit)
+      currentRoom = 'dead_1';
+      roomsVisited.add(currentRoom);
+      moveCount++;
+      describeRoom(currentRoom);
+    }, 1200);
+    return true;
+  }
+  return false;
+}
+
 // ============================================================
 // COMMANDS
 // ============================================================
- 
 function handleCommand(raw) {
   const cmd = raw.trim().toLowerCase();
   if (!cmd) return;
- 
+
+  resetIdle();
+  initAudio();
+
+  // typo correction
+  if (['lisen','listn','listne'].includes(cmd)) {
+    printCmd(raw.trim());
+    printEmpty();
+    printDim("listen.");
+    setTimeout(() => handleCommand('listen'), 600);
+    return;
+  }
+
   printCmd(raw.trim());
- 
+
   if (gameOver) {
-    if (cmd === 'listen' || cmd === 'yes' || cmd === 'play') {
-      triggerWin();
-    } else {
+    if (['listen','yes','play','hear'].includes(cmd)) { triggerWin(); }
+    else {
       printEmpty();
       printBrt("there is only the sound.");
       printDim("type: listen");
     }
     return;
   }
- 
+
+  // false center handling
+  if (rooms[currentRoom].isFalseCenter) {
+    if (cmd === 'listen') {
+      printEmpty();
+      // silence — long pause — exit appears
+      setTimeout(() => {
+        setTimeout(() => {
+          rooms['false_center'].exits.s = 'hollow';
+          printDim("exit: south");
+        }, 2200);
+      }, 1800);
+    } else if ((cmd === 's' || cmd === 'south') && rooms['false_center'].exits.s) {
+      currentRoom = 'hollow';
+      roomsVisited.add(currentRoom);
+      moveCount++;
+      describeRoom(currentRoom);
+    } else {
+      printEmpty(); printWarn("the wall is solid.");
+    }
+    return;
+  }
+
   const room = rooms[currentRoom];
- 
+
   switch(true) {
- 
+
     case cmd === 'help': {
       printEmpty();
       printDim("commands:");
       printDim("  n / s / e / w   — move");
       printDim("  look            — look around");
+      printDim("  listen          — listen");
       printDim("  where           — where you are");
       printDim("  map             — how far you've come");
-      printDim("  listen          — listen");
       printDim("  help            — this");
       break;
     }
- 
-    case cmd === 'look': {
-      describeRoom(currentRoom);
-      break;
-    }
- 
+
+    case cmd === 'look': { describeRoom(currentRoom); break; }
+
     case cmd === 'where': {
       printEmpty();
-      printDim("depth: " + room.depth);
-      printDim("moves: " + moveCount);
-      printDim("rooms seen: " + roomsVisited.size);
+      if (room.isCenter) {
+        printDim("depth: center");
+        printDim("moves: irrelevant");
+        printDim("rooms seen: enough");
+      } else if (moveCount > 25) {
+        printDim("depth: you stopped measuring a while ago.");
+        printDim("moves: " + moveCount);
+        printDim("rooms seen: all of them.");
+      } else {
+        printDim("depth: " + room.depth);
+        printDim("moves: " + moveCount);
+        printDim("rooms seen: " + roomsVisited.size);
+      }
       break;
     }
- 
+
     case cmd === 'map': {
       printEmpty();
-      const pct = Math.round((roomsVisited.size / Object.keys(rooms).length) * 100);
-      printDim("rooms explored: " + roomsVisited.size + " / " + Object.keys(rooms).length);
+      const total = Object.keys(rooms).filter(k => !rooms[k].isFalseCenter).length;
+      const pct = Math.round((roomsVisited.size / total) * 100);
+      printDim("rooms explored: " + roomsVisited.size);
       printDim("depth reached: " + room.depth + " / 6");
-      // simple ascii bar
       const filled = Math.round(pct / 5);
-      const bar = '[' + '█'.repeat(filled) + '░'.repeat(20 - filled) + '] ' + pct + '%';
-      printDim(bar);
+      printDim('[' + '█'.repeat(filled) + '░'.repeat(20-filled) + '] ' + pct + '%');
       break;
     }
- 
+
     case ['n','s','e','w','north','south','east','west'].includes(cmd): {
-      const dir = cmd[0]; // just first letter
+      const dir = cmd[0];
+      if (maybeSkip(dir)) break;
+      if (maybeLie(dir)) break;
       if (room.exits[dir]) {
+        recordRush();
+        // use alternate description for hall_a if reached via unusual path
+        if (room.exits[dir] === 'hall_a' && currentRoom !== 'junction_1' && currentRoom !== 'entrance') {
+          const next = rooms['hall_a'];
+          // force version index 1 (altered description) on this specific arrival
+          visitCounts['hall_a'] = Math.max(visitCounts['hall_a'] || 0, 1);
+        }
         currentRoom = room.exits[dir];
-        rooms[currentRoom].visited = true;
         roomsVisited.add(currentRoom);
         moveCount++;
         describeRoom(currentRoom);
-        if (rooms[currentRoom].isCenter) {
-          gameOver = true;
-        }
+        if (rooms[currentRoom].isCenter) gameOver = true;
       } else {
-        printEmpty();
-        printWarn("the wall is solid.");
+        printEmpty(); printWarn("the wall is solid.");
       }
       break;
     }
- 
-    case cmd === 'listen' && room.isCenter: {
-      triggerWin();
-      break;
-    }
- 
+
+    case cmd === 'listen' && room.isCenter: { triggerWin(); break; }
+
     case cmd === 'listen': {
       printEmpty();
+      listenTotal++;
+
+      if (currentRoom === 'dead_2') {
+        rooms['dead_2'].listenCount = (rooms['dead_2'].listenCount || 0) + 1;
+        if (rooms['dead_2'].listenCount >= 3 && !rooms['dead_2'].hiddenUnlocked) {
+          rooms['dead_2'].hiddenUnlocked = true;
+          rooms['dead_2'].exits.n = 'center';
+          printDim("you listen.");
+          setTimeout(() => printEmpty(), 1200);
+          setTimeout(() => printDim("something listens back."), 2800);
+          setTimeout(() => {
+            printEmpty();
+            printBrt("something opens."); printBrt("north.");
+            rooms['dead_2'].flavor = "exits: west, north";
+          }, 4200);
+          break;
+        }
+      }
+
       const tuner = [
-        // depth 0
         ["you hear your own breathing.", "nothing else."],
-        // depth 1
         ["you hear your own breathing.", "and something. very faint.", "like a note played in another building."],
-        // depth 2
         ["a hum. low and unsteady.", "you can't quite place it.", "somewhere between feeling and sound."],
-        // depth 3
         ["clearer now. a single frequency.", "it wavers. like a string still settling.", "you are getting closer to something."],
-        // depth 4
         ["unmistakable. a held note.", "low. steady. almost felt in the chest.", "you know this sound from somewhere."],
-        // depth 5
-        ["it fills the space here.", "one note. pure. unwavering.", "261.63 hz. middle c.", "the center is just ahead."],
+        ["it fills the space here.", "one note. pure. unwavering.", "261.63"],
       ];
       const responses = tuner[Math.min(room.depth, tuner.length - 1)];
-      responses.forEach(l => printDim(l));
+
+      if (room.depth >= 3) {
+        printDim(responses[0]);
+        setTimeout(() => {
+          printEmpty();
+          responses.slice(1).forEach(l => printDim(l));
+        }, 1200);
+      } else {
+        responses.forEach(l => printDim(l));
+      }
       break;
     }
- 
+
+    case cmd === 'breathe': {
+      printEmpty();
+      if (room.depth >= 5) {
+        printDim("you breathe.");
+        setTimeout(() => printEmpty(), 800);
+        setTimeout(() => printDim("the note steadies."), 1600);
+        nudgeAudio();
+      } else if (room.depth >= 3) {
+        printDim("you breathe."); printDim("the maze doesn't.");
+      } else {
+        printDim("you breathe."); printDim("in. out.");
+      }
+      break;
+    }
+
+    case cmd === 'hum': {
+      humCount++;
+      printEmpty();
+      printDim("you hum.");
+      if (room.depth >= 3) {
+        printDim("the maze hums back.");
+        printDim("not an echo. a response.");
+      } else {
+        printDim("the sound is swallowed immediately.");
+      }
+      checkHumGeometry();
+      break;
+    }
+
+    case cmd === 'sing': {
+      printEmpty();
+      const sings = [
+        "the sound you make echoes differently here.",
+        "you hold a note. the walls hold it back.",
+        "it disappears before you finish.",
+        "something almost harmonizes with you."
+      ];
+      printDim(sings[moveCount % sings.length]);
+      break;
+    }
+
+    case cmd === 'who are you': {
+      printEmpty();
+      if (askedQuestions.has('who are you')) {
+        printDim("you already asked that.");
+      } else {
+        askedQuestions.add('who are you');
+        // silence — no response
+      }
+      break;
+    }
+
+    case cmd === 'remember': {
+      printEmpty();
+      printDim("something almost returns to you.");
+      if (moveCount > 10) {
+        setTimeout(() => printEmpty(), 800);
+        setTimeout(() => printDim("a room. light through a window. music."), 1600);
+        setTimeout(() => printDim("it's gone."), 2800);
+      }
+      break;
+    }
+
+    case cmd === 'dream':  { printEmpty(); printDim("you are already inside one."); break; }
+    case cmd === 'name':   { printEmpty(); printDim("261hz."); printDim("that's all you have."); break; }
+    case cmd === 'forget': { printEmpty(); printDim("you try."); printDim("the maze doesn't."); break; }
+    case cmd === 'wake':   { printEmpty(); printDim("you are awake."); printDim("that's the problem."); break; }
+
+    case cmd === 'play': {
+      printEmpty();
+      if (room.depth >= 5) { printBrt("not yet."); printBrt("find the note first."); }
+      else { printDim("there is nothing to play here."); printDim("keep moving."); }
+      break;
+    }
+
     case cmd === 'touch' || cmd === 'feel': {
       printEmpty();
-      if (room.dead) {
-        printDim("the wall is cool. slightly damp.");
-        printDim("you press harder. nothing.");
-      } else {
-        printDim("rough. solid. real.");
-      }
+      if (room.dead) { printDim("the wall is cool. slightly damp."); printDim("you press harder. nothing."); }
+      else { printDim("rough. solid. real."); }
       break;
     }
- 
+
     case cmd === 'wait' || cmd === 'sit' || cmd === 'rest': {
-      printEmpty();
-      printDim("you wait.");
-      printDim("the maze doesn't mind.");
+      printEmpty(); printDim("you wait.");
+      if (room.depth >= 4) {
+        setTimeout(() => printEmpty(), 800);
+        setTimeout(() => printDim("somewhere above you: a cursor blinks."), 1600);
+      } else { printDim("the maze doesn't mind."); }
       break;
     }
- 
+
     case cmd === 'back' || cmd === 'return': {
-      printEmpty();
-      printWarn("you'll have to find your own way back.");
-      break;
+      printEmpty(); printWarn("you'll have to find your own way back."); break;
     }
- 
+
     case cmd === 'quit' || cmd === 'exit': {
-      printEmpty();
-      printDim("there is no exit.");
-      printDim("only through.");
-      break;
+      printEmpty(); printDim("there is no exit."); printDim("only through."); break;
     }
- 
+
     case cmd.startsWith('go '): {
-      // handle "go north" etc
-      const dir2 = cmd.split(' ')[1];
-      if (['north','south','east','west'].includes(dir2)) {
-        handleCommand(dir2[0]);
-        return;
-      }
-      printEmpty();
-      printWarn("unknown command. try: help");
-      break;
+      const d = cmd.split(' ')[1];
+      if (['north','south','east','west'].includes(d)) { handleCommand(d[0]); return; }
+      printEmpty(); printWarn("unknown command. try: help"); break;
     }
- 
+
     default: {
       printEmpty();
-      // occasionally give a slightly poetic response to unknown commands
-      const unknowns = [
-        "the maze doesn't respond to that.",
-        "nothing happens.",
-        "silence.",
-        "the walls don't answer.",
-        "unknown. try: help"
-      ];
-      printWarn(unknowns[moveCount % unknowns.length]);
+      const u = ["the maze doesn't respond to that.","nothing happens.","silence.",
+                 "the walls don't answer.","unknown. try: help"];
+      printWarn(u[moveCount % u.length]);
       break;
     }
   }
 }
- 
+
 // ============================================================
 // WIN
 // ============================================================
- 
 function triggerWin() {
-  const ws = document.getElementById('win-screen');
-  ws.classList.add('visible');
- 
-  // stagger the win lines
-  const lines = ['w1','w2','w3','w4','w5','w6'];
-  lines.forEach((id, i) => {
-    setTimeout(() => {
-      document.getElementById(id).classList.add('show');
-    }, 600 + i * 700);
-  });
+  fadeOutAudio();
+  clearTimeout(idleTimer);
+  document.body.classList.remove('deep');
+
+  setTimeout(() => {
+    document.getElementById('win-screen').classList.add('visible');
+    ['w1','w2','w3','w4','w5'].forEach((id, i) => {
+      setTimeout(() => document.getElementById(id).classList.add('show'), 400 + i * 750);
+    });
+    const afterW5 = 400 + 4 * 750 + 750;
+    setTimeout(() => document.getElementById('w6').classList.add('show'), afterW5 + 2800);
+    setTimeout(() => document.getElementById('w7').classList.add('show'), afterW5 + 3700);
+    setTimeout(() => document.getElementById('w8').classList.add('show'), afterW5 + 4900);
+  }, 600);
 }
- 
+
+// ============================================================
+// RESTART
+// ============================================================
 function restartGame() {
-  // reset state
+  runCount++;
   currentRoom = 'entrance';
   moveCount = 0;
   roomsVisited = new Set(['entrance']);
   gameOver = false;
- 
-  // reset visited flags
-  Object.values(rooms).forEach(r => r.visited = false);
- 
-  // hide win screen
+  listenTotal = 0;
+  humCount = 0;
+  rushCount = 0;
+  lieUsed = false;
+  globalEvents.clear();
+  clearTimeout(idleTimer);
+  clearTimeout(rushTimer);
+
+  const parts = bootVersion.split('.');
+  parts[2] = String(parseInt(parts[2]) + 1);
+  bootVersion = parts.join('.');
+
+  // reset room state
+  Object.values(rooms).forEach(r => {
+    r._bridged = false; r._collapsed = false; r._mutated = false;
+    if (r.listenCount !== undefined) r.listenCount = 0;
+    if (r.hiddenUnlocked !== undefined) {
+      r.hiddenUnlocked = false;
+      delete r.exits.n;
+      r.flavor = "exit: west";
+    }
+    if (r.isFalseCenter) { r.exits = {}; }
+  });
+  // restore deep_hall exits
+  rooms['deep_hall'].exits = { n:'hollow', e:'dead_4', w:'winding' };
+  rooms['deep_hall'].impressions = {
+    n:"the narrower passage feels familiar.",
+    e:"a pocket in the dark.",
+    w:"something winds away from you."
+  };
+  // restore winding
+  rooms['winding'].exits = { e:'deep_hall', n:'hollow' };
+  // restore loop_b
+  rooms['loop_b'].exits = { s:'loop_a', e:'passage_wide' };
+  // restore side_room
+  rooms['side_room'].exits = { w:'chamber_a', n:'dead_3' };
+  // restore hollow
+  rooms['hollow'].exits = { n:'false_center', s:'deep_hall' };
+
   document.getElementById('win-screen').classList.remove('visible');
   document.querySelectorAll('.win-line').forEach(el => el.classList.remove('show'));
- 
-  // clear output
   document.getElementById('output').innerHTML = '';
- 
-  // reboot
+  document.body.classList.remove('deep');
+
+  fadeOutAudio();
   boot();
 }
- 
+
 // ============================================================
 // BOOT
 // ============================================================
- 
 function boot() {
-  const out = document.getElementById('output');
-  out.classList.add('flicker');
-  setTimeout(() => out.classList.remove('flicker'), 400);
- 
-  setTimeout(() => { printDim("SYSTEM BOOT v2.1.0  --  READY"); }, 200);
-  setTimeout(() => { printDim("------------------------------------"); }, 400);
-  setTimeout(() => { printEmpty(); }, 600);
-  setTimeout(() => { print("you are inside a maze."); }, 800);
-  setTimeout(() => { print("you don't remember arriving."); }, 1100);
-  setTimeout(() => { print("somewhere ahead, a sound."); }, 1400);
-  setTimeout(() => { printEmpty(); }, 1700);
-  setTimeout(() => { printDim("type: help for commands"); }, 1900);
+  rooms['hollow'].exits.n = 'false_center';
+  rooms['false_center'].exits = {};
+
+  const o = out();
+  o.classList.add('flicker');
+  setTimeout(() => o.classList.remove('flicker'), 400);
+
+  setTimeout(() => printDim("SYSTEM BOOT v" + bootVersion + "  --  READY"), 200);
+  setTimeout(() => printDim("------------------------------------"), 400);
+  setTimeout(() => printEmpty(), 600);
+
+  if (runCount === 1) {
+    setTimeout(() => printDim("welcome back."), 650);
+    setTimeout(() => printEmpty(), 900);
+    setTimeout(() => print("you are inside a maze."), 1000);
+    setTimeout(() => print("you don't remember arriving."), 1300);
+  } else if (runCount === 2) {
+    setTimeout(() => printDim("you've done this before."), 650);
+    setTimeout(() => printEmpty(), 900);
+    setTimeout(() => print("you are inside a maze."), 1000);
+    setTimeout(() => print("you don't remember arriving."), 1300);
+  } else if (runCount >= 3) {
+    setTimeout(() => printDim("you've done this before."), 650);
+    setTimeout(() => printEmpty(), 900);
+    setTimeout(() => print("you are inside a maze."), 1000);
+    setTimeout(() => print("you remember arriving this time."), 1300);
+  } else {
+    setTimeout(() => print("you are inside a maze."), 800);
+    setTimeout(() => print("you don't remember arriving."), 1100);
+  }
+
+  const off = runCount > 0 ? 200 : 0;
+  setTimeout(() => print("somewhere ahead, a sound."), 1400 + off);
+  setTimeout(() => printEmpty(), 1700 + off);
+  setTimeout(() => printDim("type: help for commands"), 1900 + off);
   setTimeout(() => {
     describeRoom(currentRoom, true);
     rooms[currentRoom].visited = true;
     roomsVisited.add(currentRoom);
-  }, 2300);
+  }, 2300 + off);
 }
- 
+
 // ============================================================
-// INPUT HANDLING
+// INPUT
 // ============================================================
- 
 document.getElementById('input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') {
-    const val = this.value;
-    this.value = '';
+    const val = this.value; this.value = '';
     handleCommand(val);
   }
 });
- 
-// keep input focused
-document.addEventListener('click', () => {
-  document.getElementById('input').focus();
-});
- 
-// start
+
+document.addEventListener('click', () => document.getElementById('input').focus());
+
 boot();
 </script>
 </body>
