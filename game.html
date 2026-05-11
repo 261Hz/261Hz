@@ -268,7 +268,8 @@ const rooms = {
     descs:[
       ["the passage is wide here. almost welcoming.",
        "the walls are rough but the floor is smooth.",
-       "you came from somewhere. you don't remember where."],
+       "you came from somewhere. you don't remember where.",
+       "somewhere ahead: a sound. you should listen for it."],
       ["the passage is wide here. less welcoming now.",
        "the floor is smooth.",
        "you came from somewhere."],
@@ -326,8 +327,9 @@ const rooms = {
     descs:[
       ["three ways. you pause.",
        "from one direction, a faint hum.",
-       "from another, nothing. from the third, also nothing."],
-      ["three ways.", "the hum from one direction."],
+       "it wants something from you.",
+       "try: listen"],
+      ["three ways.", "the hum. still waiting."],
       ["three ways. the hum."]
     ],
     flavor:"exits: north, south, west",
@@ -394,9 +396,10 @@ const rooms = {
     descs:[
       ["you stop.",
        "there is nothing ahead.",
-       "but standing here feels strangely necessary."],
-      ["you stop again.", "still nothing.", "still necessary."],
-      ["you stop.", "necessary."]
+       "the silence here is specific. like it's waiting.",
+       "try: listen"],
+      ["you stop again.", "the silence again.", "still waiting."],
+      ["you stop.", "waiting."]
     ],
     flavor:"exit: west",
     exits:{ w:'narrow_1' }, dead:true,
@@ -441,7 +444,8 @@ const rooms = {
     descs:[
       ["a small chamber. almost circular.",
        "you sit down without meaning to.",
-       "the hum is clearer now. like a single held note."],
+       "the hum is clearer now. like a single held note.",
+       "you could hum back."],
       ["the chamber. almost circular.", "the hum, clearer."],
       ["the hum."]
     ],
@@ -563,7 +567,8 @@ const rooms = {
        "the sound here is unmistakable now.",
        "a single frequency. low and clear. like a piano key held down forever.",
        "the sound seems closer than the geometry allows.",
-       "somewhere above you: a cursor blinks in time with your breathing."],
+       "somewhere above you: a cursor blinks in time with your breathing.",
+       "listen."],
       ["the hollow.", "the frequency.", "closer than the geometry allows."],
       ["closer."]
     ],
@@ -580,7 +585,8 @@ const rooms = {
       "the sound is overwhelming here.",
       "the walls thin.",
       "there is nowhere left to go.",
-      "", "type: listen"
+      "",
+      "type: listen"
     ]],
     exits:{}, isFalseCenter:true
   },
@@ -703,21 +709,7 @@ function getSpamLine() {
 // threshold and hollow require attunement, not just navigation
 // ============================================================
 function checkUnlocks() {
-  // threshold unlocks once — never resets
-  if (!thresholdUnlocked && listenTotal >= 2 && (humCount >= 1 || moveCount >= 10)) {
-    thresholdUnlocked = true;
-    rooms['passage_low'].exits.n = 'threshold';
-    if (roomsVisited.has('loop_b') || roomsVisited.has('loop_a')) {
-      rooms['loop_b'].exits.n = 'threshold';
-    }
-  }
-
-  // hollow unlocks once — never resets
-  if (!hollowUnlocked && listenTotal >= 4 && moveCount >= 6) {
-    hollowUnlocked = true;
-    rooms['deep_hall'].exits.n = 'hollow';
-    rooms['winding'].exits.n = 'hollow';
-  }
+  // no conditional locking — all paths open
 }
 
 // echo rooms — subtle blocks that don't feel like walls
@@ -726,8 +718,10 @@ rooms['passage_low_block'] = {
   descs:[
     ["the passage ahead seems to contract.",
      "you step forward but something resists.",
-     "not a wall. more like the space refusing."],
-    ["the contraction again."],
+     "not a wall. more like the space refusing.",
+     "like you haven't been paying attention.",
+     "listen. hum. then try again."],
+    ["the contraction again.", "listen more."],
     ["resistance."]
   ],
   flavor:"exit: south",
@@ -737,11 +731,11 @@ rooms['passage_low_block'] = {
 rooms['deep_hall_echo'] = {
   id:'deep_hall_echo', depth:4,
   descs:[
-    ["the passage continues, but somehow you arrive here again.",
-     "the walls are the same.",
-     "or very nearly."],
-    ["here again.", "or nearly."],
-    ["nearly."]
+    ["the passage north closes as you approach.",
+     "you haven't heard enough yet.",
+     "listen more. then return."],
+    ["still not enough.", "keep listening."],
+    ["listen."]
   ],
   impressions:{ s:"something like the way you came." },
   exits:{ s:'deep_hall' }, dead:true
@@ -975,42 +969,15 @@ function handleCommand(raw) {
 
     case ['n','s','e','w','north','south','east','west'].includes(cmd): {
       const dir = cmd[0];
-
-      // check if direction exists at all
-      if (!room.exits[dir]) {
-        // anti-repeat feedback even on walls
-        if (lastDir === dir) repeatCount++;
-        lastDir = dir;
+      if (room.exits[dir]) {
+        currentRoom = room.exits[dir];
+        roomsVisited.add(currentRoom);
+        moveCount++;
+        describeRoom(currentRoom);
+        if (rooms[currentRoom].isCenter) gameOver = true;
+      } else {
         printEmpty(); printWarn("the wall is solid.");
-        break;
       }
-
-      // was this a spam repeat? show feedback line before resolving
-      const wasSpam = lastDir === dir && repeatCount >= 3;
-
-      const resolved = resolveMove(room, dir);
-
-      // update repeat tracking
-      if (lastDir === dir) repeatCount++;
-      else repeatCount = 0;
-      lastDir = dir;
-
-      if (!resolved) { printEmpty(); printWarn("the wall is solid."); break; }
-
-      // spam feedback
-      if (wasSpam) { printEmpty(); printDim(getSpamLine()); }
-
-      // rotated exits displacement: occasionally describe arrival as unexpected
-      const wasDistorted = resolved !== room.exits[dir];
-      if (wasDistorted && Math.random() < 0.5) {
-        printEmpty(); printDim("you arrive somewhere slightly wrong.");
-      }
-
-      currentRoom = resolved;
-      roomsVisited.add(currentRoom);
-      moveCount++;
-      describeRoom(currentRoom);
-      if (rooms[currentRoom].isCenter) gameOver = true;
       break;
     }
 
@@ -1223,8 +1190,7 @@ function restartGame() {
 function boot() {
   rooms['hollow'].exits.n = 'false_center';
   rooms['false_center'].exits = {};
-  // threshold starts locked
-  rooms['passage_low'].exits.n = 'passage_low_block';
+  // all paths open from start
 
   const o = out();
   o.classList.add('flicker');
