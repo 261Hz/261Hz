@@ -175,48 +175,35 @@ function initAudio() {
     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     gainNode = audioCtx.createGain();
     gainNode.gain.value = 0;
-
     osc1 = audioCtx.createOscillator();
-    osc1.frequency.value = 261.63;
-    osc1.type = 'sine';
-    osc1.connect(gainNode);
-    osc1.start();
-
+    osc1.frequency.value = 261.63; osc1.type = 'sine';
+    osc1.connect(gainNode); osc1.start();
     osc2 = audioCtx.createOscillator();
-    osc2.frequency.value = 262.03;
-    osc2.type = 'sine';
-    const g2 = audioCtx.createGain();
-    g2.gain.value = 0.4;
-    osc2.connect(g2);
-    g2.connect(gainNode);
-    osc2.start();
-
+    osc2.frequency.value = 262.03; osc2.type = 'sine';
+    const g2 = audioCtx.createGain(); g2.gain.value = 0.4;
+    osc2.connect(g2); g2.connect(gainNode); osc2.start();
     gainNode.connect(audioCtx.destination);
   } catch(e) {}
 }
 
-function setVolume(target, dur) {
+function setVolume(t, d) {
   if (!gainNode) return;
-  gainNode.gain.linearRampToValueAtTime(target, audioCtx.currentTime + dur);
+  gainNode.gain.linearRampToValueAtTime(t, audioCtx.currentTime + d);
 }
-
 function fadeInAudio(depth) {
   if (!audioCtx) return;
-  const vols = { 4:0.006, 5:0.015, 6:0.025 };
-  const vol = vols[depth] || 0;
-  if (vol > 0) setVolume(vol, 2.5);
+  const vols = {4:0.006, 5:0.015, 6:0.025};
+  if (vols[depth]) setVolume(vols[depth], 2.5);
   if (osc2 && depth >= 4) {
-    const detune = { 4:0.3, 5:0.15, 6:0.05 }[depth] || 0.4;
-    osc2.frequency.setTargetAtTime(261.63 + detune, audioCtx.currentTime, 3.0);
+    const det = {4:0.3, 5:0.15, 6:0.05}[depth] || 0.4;
+    osc2.frequency.setTargetAtTime(261.63 + det, audioCtx.currentTime, 3.0);
   }
 }
-
 function fadeOutAudio() {
   if (!gainNode) return;
   setVolume(0, 1.5);
   if (osc2) osc2.frequency.setTargetAtTime(262.03, audioCtx.currentTime + 2, 1.0);
 }
-
 function nudgeAudio() {
   if (!gainNode || !audioCtx) return;
   setVolume(Math.min(gainNode.gain.value + 0.008, 0.04), 1.0);
@@ -230,30 +217,22 @@ let moveCount = 0;
 let roomsVisited = new Set();
 let gameOver = false;
 let listenTotal = 0;
+let humCount = 0;
 let bootVersion = '2.1.0';
 let runCount = 0;
-let humCount = 0;         // track humming — opens geometry after threshold
-let rushTimer = null;     // detect fast movement
-let rushCount = 0;        // moves made quickly
-let lieUsed = false;      // directional lie — once only
 const globalEvents = new Set();
 const askedQuestions = new Set();
 const visitCounts = {};
 
-function recordVisit(id) { visitCounts[id] = (visitCounts[id] || 0) + 1; }
+// anti-repeat tracking
+let lastDir = null;
+let repeatCount = 0;
 
-// rush detection
-function recordRush() {
-  rushCount++;
-  clearTimeout(rushTimer);
-  rushTimer = setTimeout(() => { rushCount = 0; }, 10000);
-}
+// conditional unlock flags
+let thresholdUnlocked = false;
+let hollowUnlocked = false;
 
-function isRushing() { return rushCount >= 5; }
-
-// ============================================================
-// IDLE TIMER
-// ============================================================
+// idle timer
 let idleTimer = null;
 function resetIdle() {
   clearTimeout(idleTimer);
@@ -266,25 +245,28 @@ function resetIdle() {
   }
 }
 
+function recordVisit(id) { visitCounts[id] = (visitCounts[id] || 0) + 1; }
+
 // ============================================================
-// ROOMS
+// ROOM GRAPH
+// descs: array of compressed versions (later = shorter)
+// flavor: shown at depth 0-3 only
+// impressions: shown at depth 4+ instead of flavor (per exit direction)
+// exits: the actual graph edges
 // ============================================================
-// descs = array of description versions (compressed on revisit)
-// flavor = shown only at depth 0-3. depth 4+ uses impressionistic prose instead.
-// impressions = impressionistic exit descriptions for depth 4+ rooms (per direction)
 const rooms = {
 
-  // ---- DEPTH 0 ----
+  // DEPTH 0
   entrance: {
     id:'entrance', depth:0,
     descs:[
       ["the passage is wide here. almost welcoming.",
        "the walls are rough but the floor is smooth.",
        "you came from somewhere. you don't remember where."],
-      ["the passage is wide here. less welcoming now.",  // altered on return from deep
+      ["the passage is wide here. less welcoming now.",
        "the floor is smooth.",
        "you came from somewhere."],
-      ["wide here.","smooth.","somewhere."],
+      ["wide here.", "smooth.", "somewhere."],
       ["here."]
     ],
     flavor:"exits: north, east",
@@ -294,7 +276,7 @@ const rooms = {
   alcove_1: {
     id:'alcove_1', depth:0,
     descs:[
-      ["a small indent in the wall. nothing here.",
+      ["a small indent in the wall.",
        "someone scratched something into the stone.",
        "it just says: keep going."],
       ["the indent. keep going."],
@@ -304,17 +286,16 @@ const rooms = {
     exits:{ w:'entrance' }, dead:true
   },
 
-  // ---- DEPTH 1 ----
+  // DEPTH 1
   hall_a: {
     id:'hall_a', depth:1,
     descs:[
       ["a long corridor. the kind you walk faster in.",
        "the ceiling is lower than you expected.",
        "there is a turn somewhere ahead."],
-      ["the corridor is narrower than before.",  // alternate when reached from unusual direction
-       "you don't remember the ceiling being this low.",
-       "the turn ahead."],
-      ["corridor. lower ceiling. the turn."],
+      ["the corridor is narrower than before.",
+       "you don't remember the ceiling being this low."],
+      ["corridor.", "the turn."],
       ["corridor."]
     ],
     flavor:"exits: north, south, east",
@@ -367,15 +348,15 @@ const rooms = {
       ["the walls curve here. unusual.",
        "the floor slopes down almost imperceptibly.",
        "you feel like you've been going the wrong way for a long time."],
-      ["the curved walls. the slope. wrong way."],
+      ["the curved walls. the slope.", "wrong way."],
       ["wrong way."]
     ],
     flavor:"exits: south, east",
     exits:{ s:'loop_a', e:'passage_wide' }
-    // loop_b.n → threshold unlocks non-euclidean after 20 moves
+    // loop_b.n → threshold added non-euclidean after 20 moves
   },
 
-  // ---- DEPTH 2 ----
+  // DEPTH 2
   passage_wide: {
     id:'passage_wide', depth:2,
     descs:[
@@ -395,7 +376,7 @@ const rooms = {
       ["narrow. your shoulders brush both walls.",
        "you move sideways.",
        "the sound is closer here. low. almost felt more than heard."],
-      ["narrow. sideways. the sound, closer."],
+      ["narrow. sideways.", "the sound, closer."],
       ["narrow.", "closer."]
     ],
     flavor:"exits: north, south, east",
@@ -416,13 +397,12 @@ const rooms = {
     listenCount:0, hiddenUnlocked:false
   },
 
-  // ---- unnecessary region — no payoff, just space ----
+  // unnecessary region — no payoff
   nowhere_a: {
     id:'nowhere_a', depth:2,
     descs:[
       ["a passage you weren't expecting.",
-       "it goes nowhere obvious.",
-       "you walk it anyway."],
+       "it goes nowhere obvious.", "you walk it anyway."],
       ["the passage again.", "still nowhere."],
       ["nowhere."]
     ],
@@ -443,14 +423,13 @@ const rooms = {
     id:'nowhere_c', depth:2,
     descs:[
       ["a dead end.", "not warm. not cold.", "just a room that exists."],
-      ["just a room."],
-      ["a room."]
+      ["just a room."], ["a room."]
     ],
     flavor:"exit: south",
     exits:{ s:'nowhere_b' }, dead:true
   },
 
-  // ---- DEPTH 3 ----
+  // DEPTH 3
   chamber_a: {
     id:'chamber_a', depth:3,
     descs:[
@@ -475,6 +454,7 @@ const rooms = {
     ],
     flavor:"exits: west, north",
     exits:{ w:'chamber_a', n:'dead_3' }
+    // side_room.n → passage_low after humming 3x
   },
 
   dead_3: {
@@ -503,7 +483,7 @@ const rooms = {
     exits:{ n:'threshold', s:'chamber_a' }
   },
 
-  // ---- DEPTH 4 — no exit labels from here. impressionistic only. ----
+  // DEPTH 4 — impressionistic exits only from here
   threshold: {
     id:'threshold', depth:4,
     descs:[
@@ -513,7 +493,6 @@ const rooms = {
       ["the threshold.", "darker ahead."],
       ["the threshold."]
     ],
-    // no flavor — replaced by impressions at depth 4+
     impressions:{
       n:"something opens into darkness.",
       s:"the way back feels uncertain."
@@ -534,10 +513,10 @@ const rooms = {
     impressions:{
       n:"the narrower passage feels familiar.",
       e:"a pocket in the dark.",
-      w:"something winds away from you.",
-      // deep_hall.w → entrance (altered) after sufficient depth traversal
+      w:"behind you: something that looks like the beginning."
     },
     exits:{ n:'hollow', e:'dead_4', w:'winding' }
+    // deep_hall.w → entrance non-euclidean after threshold visited
   },
 
   dead_4: {
@@ -565,12 +544,12 @@ const rooms = {
     impressions:{
       e:"something opens to your right.",
       n:"a passage you almost didn't notice."
-      // winding.e → deep_hall; winding.n → threshold after 2 visits
     },
     exits:{ e:'deep_hall', n:'hollow' }
+    // winding.n → threshold after 2 visits
   },
 
-  // ---- DEPTH 5 ----
+  // DEPTH 5
   hollow: {
     id:'hollow', depth:5,
     descs:[
@@ -589,56 +568,219 @@ const rooms = {
     exits:{ n:'false_center', s:'deep_hall' }
   },
 
-  // ---- FALSE CENTER ----
   false_center: {
     id:'false_center', depth:5,
     descs:[[
       "the sound is overwhelming here.",
       "the walls thin.",
       "there is nowhere left to go.",
-      "",
-      "type: listen"
+      "", "type: listen"
     ]],
     exits:{}, isFalseCenter:true
   },
 
-  // ---- TRUE CENTER ----
   center: {
     id:'center', depth:6,
     descs:[[
       "you are at the center.",
-      "",
-      "there are no exits.",
-      "",
-      "there is only a sound.",
+      "", "there are no exits.",
+      "", "there is only a sound.",
       "low. steady. the same note, held.",
-      "",
-      "the floor is smooth here too.",
-      "",
-      "type: listen"
+      "", "the floor is smooth here too.",
+      "", "type: listen"
     ]],
     exits:{}, isCenter:true
   }
 };
 
 // ============================================================
-// IMPRESSIONISTIC EXIT PROSE — depth 4+
-// Called instead of flavor text. Returns lines describing
-// available passages without compass directions.
+// MOVEMENT RESOLVER
+// At depth >= 3: weighted distortion instead of deterministic exit.
+// 70% normal, 20% lateral drift, 8% reversal, 2% displacement.
+// Anti-spam: same direction 3+ times in a row triggers loop/stall.
 // ============================================================
-function getImpressionLines(room) {
-  if (!room.impressions) return [];
-  const lines = [];
-  const dirs = Object.keys(room.exits);
-  dirs.forEach(dir => {
-    if (room.impressions[dir]) lines.push(room.impressions[dir]);
+
+const opposites = { n:'s', s:'n', e:'w', w:'e' };
+
+function getLateralRooms(room) {
+  // rooms reachable in 1 step from any neighbor — creates "drift"
+  const candidates = [];
+  Object.values(room.exits).forEach(nextId => {
+    const next = rooms[nextId];
+    if (!next) return;
+    Object.values(next.exits).forEach(id => {
+      if (id !== room.id && id !== nextId && rooms[id]) candidates.push(id);
+    });
   });
-  // if impressions don't cover all exits, add a generic remainder
-  const uncovered = dirs.filter(d => !room.impressions[d]);
-  if (uncovered.length > 0) {
-    lines.push("something else opens, indistinct.");
+  return candidates.length > 0 ? candidates : null;
+}
+
+function getDisplacementRoom(room) {
+  // thematically adjacent: same depth or ±1, previously visited
+  const visited = [...roomsVisited].filter(id => {
+    const r = rooms[id];
+    return r && Math.abs(r.depth - room.depth) <= 1 && id !== room.id;
+  });
+  return visited.length > 0 ? visited[Math.floor(Math.random() * visited.length)] : null;
+}
+
+function getSpamResponse(room) {
+  // 4+ repeats: redirect to a previously visited room, or loop
+  const visited = [...roomsVisited].filter(id => id !== room.id && rooms[id] && rooms[id].depth <= room.depth);
+  if (visited.length > 0) return visited[Math.floor(Math.random() * visited.length)];
+  // fallback: one of current room's exits
+  const exits = Object.values(room.exits);
+  return exits.length > 0 ? exits[Math.floor(Math.random() * exits.length)] : room.id;
+}
+
+function resolveMove(room, dir) {
+  const intended = room.exits[dir];
+  if (!intended) return null; // wall
+
+  // depths 0-2: fully deterministic, no distortion
+  if (room.depth < 3) return intended;
+
+  // anti-spam: same direction repeated
+  if (lastDir === dir) {
+    repeatCount++;
+  } else {
+    repeatCount = 0;
   }
-  return lines;
+
+  // 4+ same direction: forced non-progress
+  if (repeatCount >= 3) {
+    repeatCount = 0;
+    return getSpamResponse(room);
+  }
+
+  // weighted distortion at depth 3+
+  const roll = Math.random();
+
+  if (roll < 0.70) {
+    // 70% normal
+    return intended;
+  } else if (roll < 0.90) {
+    // 20% lateral drift
+    const laterals = getLateralRooms(room);
+    if (laterals) return laterals[Math.floor(Math.random() * laterals.length)];
+    return intended;
+  } else if (roll < 0.98) {
+    // 8% reversal — go opposite direction
+    const opp = opposites[dir];
+    return room.exits[opp] || intended;
+  } else {
+    // 2% displacement — jump to visited room at same depth
+    const displaced = getDisplacementRoom(room);
+    return displaced || intended;
+  }
+}
+
+// spam feedback lines — shown when maze resists repetition
+const spamLines = [
+  "the corridor repeats.",
+  "still repeating.",
+  "you are moving, but not arriving.",
+  "the passage folds.",
+  "this feels familiar.",
+  "the maze resists."
+];
+let spamLineIdx = 0;
+
+function getSpamLine() {
+  return spamLines[spamLineIdx++ % spamLines.length];
+}
+
+// ============================================================
+// CONDITIONAL UNLOCKING
+// threshold and hollow require attunement, not just navigation
+// ============================================================
+function checkUnlocks() {
+  // threshold: requires listening AND some wandering OR humming
+  if (!thresholdUnlocked) {
+    if (listenTotal >= 2 && (humCount >= 1 || moveCount >= 10)) {
+      thresholdUnlocked = true;
+      // ensure passage_low.n points to threshold (it does by default)
+      // also quietly connect loop_b.n if player has been looping
+      if (roomsVisited.has('loop_b') || roomsVisited.has('loop_a')) {
+        rooms['loop_b'].exits.n = 'threshold';
+      }
+    } else {
+      // threshold exists in graph but redirects if not attuned
+      rooms['passage_low'].exits.n = 'passage_low_block';
+    }
+  }
+  if (thresholdUnlocked) {
+    rooms['passage_low'].exits.n = 'threshold';
+  }
+
+  // hollow: requires more listening AND movement
+  if (!hollowUnlocked) {
+    if (listenTotal >= 4 && moveCount >= 12) {
+      hollowUnlocked = true;
+      // deep_hall.n and winding.n already point to hollow
+      // ensure false_center is still gated behind hollow
+    } else {
+      // deep_hall north loops back to deep_hall itself (confusing but not punishing)
+      rooms['deep_hall'].exits.n = 'deep_hall_echo';
+    }
+  }
+  if (hollowUnlocked) {
+    rooms['deep_hall'].exits.n = 'hollow';
+  }
+}
+
+// echo rooms — subtle blocks that don't feel like walls
+rooms['passage_low_block'] = {
+  id:'passage_low_block', depth:3,
+  descs:[
+    ["the passage ahead seems to contract.",
+     "you step forward but something resists.",
+     "not a wall. more like the space refusing."],
+    ["the contraction again."],
+    ["resistance."]
+  ],
+  flavor:"exit: south",
+  exits:{ s:'passage_low' }, dead:true
+};
+
+rooms['deep_hall_echo'] = {
+  id:'deep_hall_echo', depth:4,
+  descs:[
+    ["the passage continues, but somehow you arrive here again.",
+     "the walls are the same.",
+     "or very nearly."],
+    ["here again.", "or nearly."],
+    ["nearly."]
+  ],
+  impressions:{ s:"something like the way you came." },
+  exits:{ s:'deep_hall' }, dead:true
+};
+
+// ============================================================
+// NON-EUCLIDEAN / HUM GEOMETRY
+// ============================================================
+function checkNonEuclidean() {
+  // deep_hall west → entrance (altered) once threshold visited
+  if (thresholdUnlocked && roomsVisited.has('threshold') && !rooms['deep_hall']._collapsed) {
+    rooms['deep_hall']._collapsed = true;
+    rooms['deep_hall'].exits.w = 'entrance';
+    // force entrance to altered description on next visit
+    visitCounts['entrance'] = Math.max(visitCounts['entrance'] || 0, 1);
+  }
+  // winding.n → threshold after 2 visits
+  if ((visitCounts['winding'] || 0) >= 2 && !rooms['winding']._mutated) {
+    rooms['winding']._mutated = true;
+    rooms['winding'].exits.n = 'threshold';
+  }
+}
+
+function checkHumGeometry() {
+  // humming 3x quietly connects side_room north to passage_low
+  if (humCount >= 3 && !globalEvents.has('humGeometry')) {
+    globalEvents.add('humGeometry');
+    rooms['side_room'].exits.n = 'passage_low';
+    // no announcement
+  }
 }
 
 // ============================================================
@@ -646,10 +788,21 @@ function getImpressionLines(room) {
 // ============================================================
 function getRoomDesc(room) {
   const count = visitCounts[room.id] || 0;
-  // rushing compresses descriptions faster
-  const speedMult = isRushing() ? 2 : 1;
+  // spam compression: if player has been repeating, descriptions shorten faster
+  const speedMult = repeatCount >= 2 ? 2 : 1;
   const idx = Math.min(Math.floor(count * speedMult), room.descs.length - 1);
   return room.descs[idx];
+}
+
+function getImpressionLines(room) {
+  if (!room.impressions) return [];
+  const lines = [];
+  Object.keys(room.exits).forEach(dir => {
+    if (room.impressions[dir]) lines.push(room.impressions[dir]);
+  });
+  const uncovered = Object.keys(room.exits).filter(d => !room.impressions[d]);
+  if (uncovered.length > 0) lines.push("something else opens, indistinct.");
+  return lines;
 }
 
 function getMemoryLine(roomId) {
@@ -670,13 +823,10 @@ function getMemoryLine(roomId) {
 // OUTPUT
 // ============================================================
 const out = () => document.getElementById('output');
-
 function print(text, cls='line') {
   const div = document.createElement('div');
-  div.className = cls;
-  div.textContent = text;
-  out().appendChild(div);
-  out().scrollTop = out().scrollHeight;
+  div.className = cls; div.textContent = text;
+  out().appendChild(div); out().scrollTop = out().scrollHeight;
   return div;
 }
 function printEmpty()  { print('', 'line line-empty'); }
@@ -718,33 +868,23 @@ function describeRoom(roomId, showExits=true) {
   // one-time: maze breathing
   if (!globalEvents.has('breathing') && room.depth >= 2 && Math.random() < 0.25) {
     globalEvents.add('breathing');
-    printEmpty();
-    printDim("for a moment, you think the maze is breathing.");
+    printEmpty(); printDim("for a moment, you think the maze is breathing.");
   }
 
   // gravitational pull near center
   if (room.depth >= 5 && !room.isCenter && !room.isFalseCenter && Math.random() < 0.35) {
-    printEmpty();
-    printDim("without thinking, you move toward it.");
+    printEmpty(); printDim("without thinking, you move toward it.");
   }
 
   const memory = getMemoryLine(roomId);
   if (memory) { printEmpty(); printDim(memory); }
 
-  // exits: explicit for depth 0-3, impressionistic for depth 4+
   if (showExits && !room.isCenter && !room.isFalseCenter) {
     if (room.depth >= 4) {
       const impressions = getImpressionLines(room);
-      if (impressions.length > 0) {
-        printEmpty();
-        impressions.forEach(l => printDim(l));
-      }
-    } else {
-      // depth 5+ on revisit: strip even the flavor
-      if (room.depth < 5 || (visitCounts[room.id] || 0) <= 1) {
-        printEmpty();
-        printDim(room.flavor);
-      }
+      if (impressions.length > 0) { printEmpty(); impressions.forEach(l => printDim(l)); }
+    } else if (room.depth < 5 || (visitCounts[room.id] || 0) <= 1) {
+      printEmpty(); printDim(room.flavor);
     }
   }
 
@@ -752,101 +892,7 @@ function describeRoom(roomId, showExits=true) {
   if (audioCtx && room.depth >= 4) fadeInAudio(room.depth);
   checkNonEuclidean();
   checkHumGeometry();
-}
-
-// ============================================================
-// NON-EUCLIDEAN TRANSITIONS
-// ============================================================
-function checkNonEuclidean() {
-  // after 20 moves: loop_b quietly gains north → threshold
-  if (moveCount > 20 && !rooms['loop_b']._bridged) {
-    rooms['loop_b']._bridged = true;
-    rooms['loop_b'].exits.n = 'threshold';
-    rooms['loop_b'].impressions = rooms['loop_b'].impressions || {};
-    // no announcement
-  }
-
-  // deep_hall west → entrance (altered) after player has been to threshold+
-  if (roomsVisited.has('threshold') && !rooms['deep_hall']._collapsed) {
-    rooms['deep_hall']._collapsed = true;
-    rooms['deep_hall'].exits.w = 'entrance'; // impossible return
-    rooms['deep_hall'].impressions.w = "behind you: something that looks like the beginning.";
-  }
-
-  // winding: after 2 visits, north mutates quietly to threshold
-  if ((visitCounts['winding'] || 0) >= 2 && !rooms['winding']._mutated) {
-    rooms['winding']._mutated = true;
-    rooms['winding'].exits.n = 'threshold';
-  }
-}
-
-// ============================================================
-// HUM OPENS GEOMETRY
-// ============================================================
-function checkHumGeometry() {
-  // after humming 3+ times: dead_3 gains a south exit to chamber_a
-  // (it already has that — so instead open a path from side_room north → passage_low)
-  if (humCount >= 3 && !globalEvents.has('humGeometry')) {
-    globalEvents.add('humGeometry');
-    rooms['side_room'].exits.n = 'passage_low';
-    // no announcement
-  }
-}
-
-// ============================================================
-// SKIP (dream displacement)
-// ============================================================
-function maybeSkip(dir) {
-  const room = rooms[currentRoom];
-  if (room.depth >= 3 && moveCount > 15 && Math.random() < 0.06) {
-    const deeper = ['threshold','hollow','center'].find(id =>
-      rooms[id].depth > room.depth && !roomsVisited.has(id)
-    );
-    if (deeper) {
-      printEmpty();
-      printDim("you walk for a long time.");
-      setTimeout(() => {
-        printEmpty();
-        printDim("[...]");
-        setTimeout(() => {
-          printEmpty();
-          printDim("you are somewhere deeper now.");
-          setTimeout(() => {
-            currentRoom = deeper;
-            roomsVisited.add(currentRoom);
-            moveCount++;
-            describeRoom(currentRoom);
-            if (rooms[currentRoom].isCenter) gameOver = true;
-          }, 600);
-        }, 800);
-      }, 800);
-      return true;
-    }
-  }
-  return false;
-}
-
-// ============================================================
-// DIRECTIONAL LIE
-// ============================================================
-function maybeLie(dir) {
-  // once, at depth 3+, player walks east — response says they walked east
-  // but they end up in a room with exit: west only
-  if (!lieUsed && dir === 'e' && rooms[currentRoom].depth >= 3 && Math.random() < 0.15) {
-    lieUsed = true;
-    printEmpty();
-    printDim("you walk east for a long time.");
-    setTimeout(() => {
-      printEmpty();
-      // land in dead_1 (a room that only has west exit)
-      currentRoom = 'dead_1';
-      roomsVisited.add(currentRoom);
-      moveCount++;
-      describeRoom(currentRoom);
-    }, 1200);
-    return true;
-  }
-  return false;
+  checkUnlocks();
 }
 
 // ============================================================
@@ -861,9 +907,7 @@ function handleCommand(raw) {
 
   // typo correction
   if (['lisen','listn','listne'].includes(cmd)) {
-    printCmd(raw.trim());
-    printEmpty();
-    printDim("listen.");
+    printCmd(raw.trim()); printEmpty(); printDim("listen.");
     setTimeout(() => handleCommand('listen'), 600);
     return;
   }
@@ -871,20 +915,15 @@ function handleCommand(raw) {
   printCmd(raw.trim());
 
   if (gameOver) {
-    if (['listen','yes','play','hear'].includes(cmd)) { triggerWin(); }
-    else {
-      printEmpty();
-      printBrt("there is only the sound.");
-      printDim("type: listen");
-    }
+    if (['listen','yes','play','hear'].includes(cmd)) triggerWin();
+    else { printEmpty(); printBrt("there is only the sound."); printDim("type: listen"); }
     return;
   }
 
-  // false center handling
+  // false center
   if (rooms[currentRoom].isFalseCenter) {
     if (cmd === 'listen') {
       printEmpty();
-      // silence — long pause — exit appears
       setTimeout(() => {
         setTimeout(() => {
           rooms['false_center'].exits.s = 'hollow';
@@ -892,13 +931,9 @@ function handleCommand(raw) {
         }, 2200);
       }, 1800);
     } else if ((cmd === 's' || cmd === 'south') && rooms['false_center'].exits.s) {
-      currentRoom = 'hollow';
-      roomsVisited.add(currentRoom);
-      moveCount++;
-      describeRoom(currentRoom);
-    } else {
-      printEmpty(); printWarn("the wall is solid.");
-    }
+      currentRoom = 'hollow'; roomsVisited.add(currentRoom);
+      moveCount++; describeRoom(currentRoom);
+    } else { printEmpty(); printWarn("the wall is solid."); }
     return;
   }
 
@@ -923,24 +958,20 @@ function handleCommand(raw) {
     case cmd === 'where': {
       printEmpty();
       if (room.isCenter) {
-        printDim("depth: center");
-        printDim("moves: irrelevant");
-        printDim("rooms seen: enough");
+        printDim("depth: center"); printDim("moves: irrelevant"); printDim("rooms seen: enough");
       } else if (moveCount > 25) {
         printDim("depth: you stopped measuring a while ago.");
-        printDim("moves: " + moveCount);
-        printDim("rooms seen: all of them.");
+        printDim("moves: " + moveCount); printDim("rooms seen: all of them.");
       } else {
         printDim("depth: " + room.depth);
-        printDim("moves: " + moveCount);
-        printDim("rooms seen: " + roomsVisited.size);
+        printDim("moves: " + moveCount); printDim("rooms seen: " + roomsVisited.size);
       }
       break;
     }
 
     case cmd === 'map': {
       printEmpty();
-      const total = Object.keys(rooms).filter(k => !rooms[k].isFalseCenter).length;
+      const total = Object.keys(rooms).filter(k => !rooms[k].isFalseCenter && !k.includes('echo') && !k.includes('block')).length;
       const pct = Math.round((roomsVisited.size / total) * 100);
       printDim("rooms explored: " + roomsVisited.size);
       printDim("depth reached: " + room.depth + " / 6");
@@ -951,33 +982,51 @@ function handleCommand(raw) {
 
     case ['n','s','e','w','north','south','east','west'].includes(cmd): {
       const dir = cmd[0];
-      if (maybeSkip(dir)) break;
-      if (maybeLie(dir)) break;
-      if (room.exits[dir]) {
-        recordRush();
-        // use alternate description for hall_a if reached via unusual path
-        if (room.exits[dir] === 'hall_a' && currentRoom !== 'junction_1' && currentRoom !== 'entrance') {
-          const next = rooms['hall_a'];
-          // force version index 1 (altered description) on this specific arrival
-          visitCounts['hall_a'] = Math.max(visitCounts['hall_a'] || 0, 1);
-        }
-        currentRoom = room.exits[dir];
-        roomsVisited.add(currentRoom);
-        moveCount++;
-        describeRoom(currentRoom);
-        if (rooms[currentRoom].isCenter) gameOver = true;
-      } else {
+
+      // check if direction exists at all
+      if (!room.exits[dir]) {
+        // anti-repeat feedback even on walls
+        if (lastDir === dir) repeatCount++;
+        lastDir = dir;
         printEmpty(); printWarn("the wall is solid.");
+        break;
       }
+
+      // was this a spam repeat? show feedback line before resolving
+      const wasSpam = lastDir === dir && repeatCount >= 3;
+
+      const resolved = resolveMove(room, dir);
+
+      // update repeat tracking
+      if (lastDir === dir) repeatCount++;
+      else repeatCount = 0;
+      lastDir = dir;
+
+      if (!resolved) { printEmpty(); printWarn("the wall is solid."); break; }
+
+      // spam feedback
+      if (wasSpam) { printEmpty(); printDim(getSpamLine()); }
+
+      // rotated exits displacement: occasionally describe arrival as unexpected
+      const wasDistorted = resolved !== room.exits[dir];
+      if (wasDistorted && Math.random() < 0.5) {
+        printEmpty(); printDim("you arrive somewhere slightly wrong.");
+      }
+
+      currentRoom = resolved;
+      roomsVisited.add(currentRoom);
+      moveCount++;
+      describeRoom(currentRoom);
+      if (rooms[currentRoom].isCenter) gameOver = true;
       break;
     }
 
     case cmd === 'listen' && room.isCenter: { triggerWin(); break; }
 
     case cmd === 'listen': {
-      printEmpty();
-      listenTotal++;
+      printEmpty(); listenTotal++;
 
+      // dead_2 unlock
       if (currentRoom === 'dead_2') {
         rooms['dead_2'].listenCount = (rooms['dead_2'].listenCount || 0) + 1;
         if (rooms['dead_2'].listenCount >= 3 && !rooms['dead_2'].hiddenUnlocked) {
@@ -987,8 +1036,7 @@ function handleCommand(raw) {
           setTimeout(() => printEmpty(), 1200);
           setTimeout(() => printDim("something listens back."), 2800);
           setTimeout(() => {
-            printEmpty();
-            printBrt("something opens."); printBrt("north.");
+            printEmpty(); printBrt("something opens."); printBrt("north.");
             rooms['dead_2'].flavor = "exits: west, north";
           }, 4200);
           break;
@@ -1004,16 +1052,12 @@ function handleCommand(raw) {
         ["it fills the space here.", "one note. pure. unwavering.", "261.63"],
       ];
       const responses = tuner[Math.min(room.depth, tuner.length - 1)];
-
       if (room.depth >= 3) {
         printDim(responses[0]);
-        setTimeout(() => {
-          printEmpty();
-          responses.slice(1).forEach(l => printDim(l));
-        }, 1200);
-      } else {
-        responses.forEach(l => printDim(l));
-      }
+        setTimeout(() => { printEmpty(); responses.slice(1).forEach(l => printDim(l)); }, 1200);
+      } else { responses.forEach(l => printDim(l)); }
+
+      checkUnlocks(); // listening might unlock threshold/hollow
       break;
     }
 
@@ -1026,52 +1070,38 @@ function handleCommand(raw) {
         nudgeAudio();
       } else if (room.depth >= 3) {
         printDim("you breathe."); printDim("the maze doesn't.");
-      } else {
-        printDim("you breathe."); printDim("in. out.");
-      }
+      } else { printDim("you breathe."); printDim("in. out."); }
       break;
     }
 
     case cmd === 'hum': {
       humCount++;
-      printEmpty();
-      printDim("you hum.");
-      if (room.depth >= 3) {
-        printDim("the maze hums back.");
-        printDim("not an echo. a response.");
-      } else {
-        printDim("the sound is swallowed immediately.");
-      }
-      checkHumGeometry();
+      printEmpty(); printDim("you hum.");
+      if (room.depth >= 3) { printDim("the maze hums back."); printDim("not an echo. a response."); }
+      else { printDim("the sound is swallowed immediately."); }
+      checkHumGeometry(); checkUnlocks();
       break;
     }
 
     case cmd === 'sing': {
       printEmpty();
-      const sings = [
-        "the sound you make echoes differently here.",
+      const sings = ["the sound you make echoes differently here.",
         "you hold a note. the walls hold it back.",
         "it disappears before you finish.",
-        "something almost harmonizes with you."
-      ];
+        "something almost harmonizes with you."];
       printDim(sings[moveCount % sings.length]);
       break;
     }
 
     case cmd === 'who are you': {
       printEmpty();
-      if (askedQuestions.has('who are you')) {
-        printDim("you already asked that.");
-      } else {
-        askedQuestions.add('who are you');
-        // silence — no response
-      }
+      if (askedQuestions.has('who are you')) printDim("you already asked that.");
+      else askedQuestions.add('who are you');
       break;
     }
 
     case cmd === 'remember': {
-      printEmpty();
-      printDim("something almost returns to you.");
+      printEmpty(); printDim("something almost returns to you.");
       if (moveCount > 10) {
         setTimeout(() => printEmpty(), 800);
         setTimeout(() => printDim("a room. light through a window. music."), 1600);
@@ -1095,7 +1125,7 @@ function handleCommand(raw) {
     case cmd === 'touch' || cmd === 'feel': {
       printEmpty();
       if (room.dead) { printDim("the wall is cool. slightly damp."); printDim("you press harder. nothing."); }
-      else { printDim("rough. solid. real."); }
+      else printDim("rough. solid. real.");
       break;
     }
 
@@ -1104,17 +1134,14 @@ function handleCommand(raw) {
       if (room.depth >= 4) {
         setTimeout(() => printEmpty(), 800);
         setTimeout(() => printDim("somewhere above you: a cursor blinks."), 1600);
-      } else { printDim("the maze doesn't mind."); }
+      } else printDim("the maze doesn't mind.");
       break;
     }
 
-    case cmd === 'back' || cmd === 'return': {
-      printEmpty(); printWarn("you'll have to find your own way back."); break;
-    }
-
-    case cmd === 'quit' || cmd === 'exit': {
-      printEmpty(); printDim("there is no exit."); printDim("only through."); break;
-    }
+    case cmd === 'back' || cmd === 'return':
+      { printEmpty(); printWarn("you'll have to find your own way back."); break; }
+    case cmd === 'quit' || cmd === 'exit':
+      { printEmpty(); printDim("there is no exit."); printDim("only through."); break; }
 
     case cmd.startsWith('go '): {
       const d = cmd.split(' ')[1];
@@ -1136,19 +1163,16 @@ function handleCommand(raw) {
 // WIN
 // ============================================================
 function triggerWin() {
-  fadeOutAudio();
-  clearTimeout(idleTimer);
+  fadeOutAudio(); clearTimeout(idleTimer);
   document.body.classList.remove('deep');
-
   setTimeout(() => {
     document.getElementById('win-screen').classList.add('visible');
-    ['w1','w2','w3','w4','w5'].forEach((id, i) => {
-      setTimeout(() => document.getElementById(id).classList.add('show'), 400 + i * 750);
-    });
-    const afterW5 = 400 + 4 * 750 + 750;
-    setTimeout(() => document.getElementById('w6').classList.add('show'), afterW5 + 2800);
-    setTimeout(() => document.getElementById('w7').classList.add('show'), afterW5 + 3700);
-    setTimeout(() => document.getElementById('w8').classList.add('show'), afterW5 + 4900);
+    ['w1','w2','w3','w4','w5'].forEach((id,i) =>
+      setTimeout(() => document.getElementById(id).classList.add('show'), 400+i*750));
+    const after = 400 + 4*750 + 750;
+    setTimeout(() => document.getElementById('w6').classList.add('show'), after+2800);
+    setTimeout(() => document.getElementById('w7').classList.add('show'), after+3700);
+    setTimeout(() => document.getElementById('w8').classList.add('show'), after+4900);
   }, 600);
 }
 
@@ -1156,18 +1180,12 @@ function triggerWin() {
 // RESTART
 // ============================================================
 function restartGame() {
-  runCount++;
-  currentRoom = 'entrance';
-  moveCount = 0;
-  roomsVisited = new Set(['entrance']);
-  gameOver = false;
-  listenTotal = 0;
-  humCount = 0;
-  rushCount = 0;
-  lieUsed = false;
-  globalEvents.clear();
-  clearTimeout(idleTimer);
-  clearTimeout(rushTimer);
+  runCount++; currentRoom = 'entrance';
+  moveCount = 0; roomsVisited = new Set(['entrance']);
+  gameOver = false; listenTotal = 0; humCount = 0;
+  lastDir = null; repeatCount = 0;
+  thresholdUnlocked = false; hollowUnlocked = false;
+  globalEvents.clear(); clearTimeout(idleTimer);
 
   const parts = bootVersion.split('.');
   parts[2] = String(parseInt(parts[2]) + 1);
@@ -1178,35 +1196,32 @@ function restartGame() {
     r._bridged = false; r._collapsed = false; r._mutated = false;
     if (r.listenCount !== undefined) r.listenCount = 0;
     if (r.hiddenUnlocked !== undefined) {
-      r.hiddenUnlocked = false;
-      delete r.exits.n;
+      r.hiddenUnlocked = false; delete r.exits.n;
       r.flavor = "exit: west";
     }
-    if (r.isFalseCenter) { r.exits = {}; }
+    if (r.isFalseCenter) r.exits = {};
   });
-  // restore deep_hall exits
+
+  // restore exits
+  rooms['passage_low'].exits = { n:'threshold', s:'chamber_a' };
   rooms['deep_hall'].exits = { n:'hollow', e:'dead_4', w:'winding' };
   rooms['deep_hall'].impressions = {
     n:"the narrower passage feels familiar.",
     e:"a pocket in the dark.",
     w:"something winds away from you."
   };
-  // restore winding
   rooms['winding'].exits = { e:'deep_hall', n:'hollow' };
-  // restore loop_b
   rooms['loop_b'].exits = { s:'loop_a', e:'passage_wide' };
-  // restore side_room
   rooms['side_room'].exits = { w:'chamber_a', n:'dead_3' };
-  // restore hollow
   rooms['hollow'].exits = { n:'false_center', s:'deep_hall' };
+  rooms['false_center'].exits = {};
 
   document.getElementById('win-screen').classList.remove('visible');
   document.querySelectorAll('.win-line').forEach(el => el.classList.remove('show'));
   document.getElementById('output').innerHTML = '';
   document.body.classList.remove('deep');
 
-  fadeOutAudio();
-  boot();
+  fadeOutAudio(); boot();
 }
 
 // ============================================================
@@ -1215,6 +1230,8 @@ function restartGame() {
 function boot() {
   rooms['hollow'].exits.n = 'false_center';
   rooms['false_center'].exits = {};
+  // threshold starts locked
+  rooms['passage_low'].exits.n = 'passage_low_block';
 
   const o = out();
   o.classList.add('flicker');
@@ -1245,14 +1262,14 @@ function boot() {
   }
 
   const off = runCount > 0 ? 200 : 0;
-  setTimeout(() => print("somewhere ahead, a sound."), 1400 + off);
-  setTimeout(() => printEmpty(), 1700 + off);
-  setTimeout(() => printDim("type: help for commands"), 1900 + off);
+  setTimeout(() => print("somewhere ahead, a sound."), 1400+off);
+  setTimeout(() => printEmpty(), 1700+off);
+  setTimeout(() => printDim("type: help for commands"), 1900+off);
   setTimeout(() => {
     describeRoom(currentRoom, true);
     rooms[currentRoom].visited = true;
     roomsVisited.add(currentRoom);
-  }, 2300 + off);
+  }, 2300+off);
 }
 
 // ============================================================
@@ -1264,7 +1281,6 @@ document.getElementById('input').addEventListener('keydown', function(e) {
     handleCommand(val);
   }
 });
-
 document.addEventListener('click', () => document.getElementById('input').focus());
 
 boot();
