@@ -20,7 +20,4 @@ Here are some ideas to get you started:
 </a>
 <br><br><br>
 <!-- profile visits to see how lonely i am -->
-<a href="https://info.flagcounter.com/s7x1">
-  <img src="https://s01.flagcounter.com/count/s7x1/bg_050A05/txt_00CC44/border_050A05/columns_6/maxflags_250/viewers_0/labels_0/pageviews_0/flags_0/percent_0/" alt="Flag Counter" border="0">
-</a>
 
