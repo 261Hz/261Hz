@@ -1021,12 +1021,12 @@ function handleCommand(raw) {
       }
 
       const tuner = [
-        ["you hear your own breathing.", "nothing else."],
-        ["you hear your own breathing.", "and something. very faint.", "like a note played in another building."],
-        ["a hum. low and unsteady.", "you can't quite place it.", "somewhere between feeling and sound."],
-        ["clearer now. a single frequency.", "it wavers. like a string still settling.", "you are getting closer to something."],
-        ["unmistakable. a held note.", "low. steady. almost felt in the chest.", "you know this sound from somewhere."],
-        ["it fills the space here.", "one note. pure. unwavering.", "261.63"],
+        ["the only sound is your own breathing."],
+        ["your breathing again as your footsteps fade.", "yet far away...", "something faint."],
+        ["a low uneven hum.", "a sound stripped to its vibrating core."],
+        ["closer now.", "clearer, yet still wavering.", "a secret whispered just loud enough to be heard."],
+        ["unmistakable now.", "a low steady note.", "felt in the chest.", "a familiarity you've always known, only just now hearing aloud."],
+        ["the wavering stops.", "one pure frequency fills the space.", "261.63"],
       ];
       const responses = tuner[Math.min(room.depth, tuner.length - 1)];
       if (room.depth >= 3) {
