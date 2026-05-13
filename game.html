@@ -984,19 +984,29 @@ function handleCommand(raw) {
       break;
     }
 
-    case ['n','s','e','w','north','south','east','west'].includes(cmd): {
-      const dir = cmd[0];
-      if (room.exits[dir]) {
-        currentRoom = room.exits[dir];
-        roomsVisited.add(currentRoom);
-        moveCount++;
-        describeRoom(currentRoom);
-        if (rooms[currentRoom].isCenter) gameOver = true;
-      } else {
-        printEmpty(); printWarn("the wall is solid.");
-      }
-      break;
-    }
+   case ['n','s','e','w','north','south','east','west'].includes(cmd): {
+  const dir = cmd[0];
+  const next = resolveMove(room, dir);
+
+  if (next) {
+    lastDir = dir;
+
+    currentRoom = next;
+    roomsVisited.add(currentRoom);
+    moveCount++;
+
+    describeRoom(currentRoom);
+
+    if (rooms[currentRoom].isCenter)
+      gameOver = true;
+
+  } else {
+    printEmpty();
+    printWarn("the wall is solid.");
+  }
+
+  break;
+}
 
     case cmd === 'listen' && room.isCenter: { triggerWin(); break; }
 
