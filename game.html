@@ -988,8 +988,7 @@ function handleCommand(raw) {
   const dir = cmd[0];
   const next = resolveMove(room, dir);
 
-  if (next) {
-    lastDir = dir;
+  if (!next) lastDir = null;
 
     currentRoom = next;
     roomsVisited.add(currentRoom);
