@@ -15,8 +15,8 @@ Here are some ideas to get you started:
 - ⚡ Fun fact: ...
 -->
 <!-- Terminal About me -->
-<a href="https://261hz.github.io/261Hz/game.html">
-   <img src="terminal.svg" alt="terminal" />
+<a href="https://261hz.github.io/261Hz/terminal.html">
+   <img src="terminal.html" alt="terminal" />
 </a>
 <br><br><br>
 <!-- profile visits to see how lonely i am -->
