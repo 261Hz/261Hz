@@ -16,7 +16,7 @@ Here are some ideas to get you started:
 -->
 <!-- Terminal About me -->
 <a href="https://261hz.github.io/261Hz/terminal.html">
-   <img src="terminal.html" alt="terminal" />
+  <img src="https://261hz.github.io/261Hz/terminal.svg" alt="terminal" />
 </a>
 <br><br><br>
 <!-- profile visits to see how lonely i am -->
