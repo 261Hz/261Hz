@@ -15,7 +15,7 @@ Here are some ideas to get you started:
 - ⚡ Fun fact: ...
 -->
 <!-- Terminal About me -->
-<a href="https://261hz.github.io/261Hz/terminal.html">
+<a href="https://261hz.github.io/261Hz/terminal.svg">
   <img src="https://261hz.github.io/261Hz/terminal.svg" alt="terminal" />
 </a>
 <br><br><br>
